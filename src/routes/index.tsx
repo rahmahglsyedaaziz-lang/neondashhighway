@@ -1,24 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClientOnly } from "@tanstack/react-router";
+import { Game } from "@/components/game/Game";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Traffic Dodge — Neon Endless Car Dodging Game" },
+      {
+        name: "description",
+        content:
+          "Dodge neon highway traffic in this endless arcade racer. Chain near-miss combos, grab boosts and beat your high score on desktop or mobile.",
+      },
+      { property: "og:title", content: "Traffic Dodge — Neon Endless Car Dodging Game" },
+      {
+        property: "og:description",
+        content:
+          "Weave through three lanes of neon traffic, collect coins and power-ups, and survive as long as you can.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main>
+      <h1 className="sr-only">Traffic Dodge — endless neon traffic dodging car game</h1>
+      <ClientOnly fallback={<div className="h-[100dvh] w-full bg-background" />}>
+        <Game />
+      </ClientOnly>
+    </main>
   );
 }
