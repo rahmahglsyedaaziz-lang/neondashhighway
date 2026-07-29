@@ -344,7 +344,13 @@ export class GameEngine {
     }
     this.displayScore = this.score;
     this.pushHud();
+    this.onRunEnd({
+      score: this.score,
+      coins: this.coins,
+      durationMs: Math.max(0, Math.round(performance.now() - this.runStart)),
+    });
   }
+
 
   private checkAchievements() {
     const unlock = (id: string) => {
