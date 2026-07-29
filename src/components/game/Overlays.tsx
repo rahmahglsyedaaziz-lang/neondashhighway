@@ -1,4 +1,6 @@
 import { Play } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+
 import type { HudState } from "@/game/types";
 
 export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void }) {
@@ -26,6 +28,18 @@ export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void
         <button className="btn-neon mt-6 w-full" onClick={onStart}>
           <Play className="size-4" /> Start engine
         </button>
+        <div className="mt-3 flex gap-2">
+          <Link to="/leaderboard" className="btn-ghost flex-1 !py-2 !text-xs">
+            Leaderboard
+          </Link>
+          <Link to="/garage" className="btn-ghost flex-1 !py-2 !text-xs">
+            Garage
+          </Link>
+          <Link to="/auth" className="btn-ghost flex-1 !py-2 !text-xs">
+            Account
+          </Link>
+        </div>
+
         <p className="mt-4 text-xs text-muted-foreground">
           Arrow keys / A · D to steer — swipe or tap on mobile — Space to pause
         </p>
