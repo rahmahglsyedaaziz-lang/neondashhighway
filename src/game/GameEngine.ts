@@ -77,6 +77,16 @@ export class GameEngine {
 
   phase: GamePhase = "menu";
   onHud: (s: HudState) => void = () => {};
+  onRunEnd: (run: { score: number; coins: number; durationMs: number }) => void = () => {};
+
+  /** Cosmetics + light stat tuning coming from the garage. Defaults = original car. */
+  private car = { color: "#00e5ff", accent: "#e9fdff", style: 2, handling: 6, acceleration: 5 };
+  private runStart = 0;
+
+  setCar(car: { color: string; accent: string; style: number; handling: number; acceleration: number }) {
+    this.car = { ...car };
+  }
+
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -171,6 +181,8 @@ export class GameEngine {
     this.difficulty.reset();
     this.spawner.reset();
     this.countdown = 3.99;
+    this.runStart = performance.now();
+
     this.phase = "countdown";
     this.lastAchievement = null;
     this.sound.startEngine();
@@ -233,7 +245,7 @@ export class GameEngine {
     // player lane interpolation with tilt
     const targetX = this.laneX(this.targetLane) - this.player.w / 2;
     const dx = targetX - this.player.x;
-    this.player.x += dx * Math.min(1, dt * 13);
+    this.player.x += dx * Math.min(1, dt * (11 + this.car.handling * 0.35));
     this.tilt = Math.max(-0.22, Math.min(0.22, dx / (this.player.w * 2.6)));
     if (Math.abs(dx) < 1) this.playerLane = this.targetLane;
     if (Math.abs(dx) > this.player.w * 0.15 && Math.random() < 0.4) this.emitSmoke();
@@ -332,7 +344,13 @@ export class GameEngine {
     }
     this.displayScore = this.score;
     this.pushHud();
+    this.onRunEnd({
+      score: this.score,
+      coins: this.coins,
+      durationMs: Math.max(0, Math.round(performance.now() - this.runStart)),
+    });
   }
+
 
   private checkAchievements() {
     const unlock = (id: string) => {
@@ -423,11 +441,12 @@ export class GameEngine {
     }
 
     if (!this.crashed) {
-      drawCar(ctx, this.player, "#00e5ff", "#e9fdff", 2, {
+      drawCar(ctx, this.player, this.car.color, this.car.accent, this.car.style, {
         tilt: this.tilt,
         headlights: true,
-        glow: this.boostMs > 0 ? "#00ff9d" : "#00e5ff",
+        glow: this.boostMs > 0 ? "#00ff9d" : this.car.color,
       });
+
     }
 
     drawParticles(ctx, this.particles);

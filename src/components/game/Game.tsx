@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { GameEngine } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
 import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
+import { submitRun } from "@/lib/game.functions";
+import {
+  DEFAULT_CAR_SLUG,
+  getLocalCarSlug,
+  useCars,
+  useProfile,
+  useSessionUser,
+} from "@/lib/account";
+
 
 const INITIAL: HudState = {
   phase: "menu",
@@ -26,12 +36,42 @@ export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<HudState>(INITIAL);
+  const { user } = useSessionUser();
+  const { data: cars } = useCars();
+  const { data: profile } = useProfile(user?.id);
+  const send = useServerFn(submitRun);
+  const carSlugRef = useRef(DEFAULT_CAR_SLUG);
+  const signedInRef = useRef(false);
+  signedInRef.current = !!user;
+
+  // Apply the equipped car (account car when signed in, local pick for guests).
+  useEffect(() => {
+    const slug = profile?.selected_car_slug ?? getLocalCarSlug();
+    carSlugRef.current = slug;
+    const car = cars?.find((c) => c.slug === slug);
+    if (car && engineRef.current) {
+      engineRef.current.setCar({
+        color: car.color,
+        accent: car.accent,
+        style: car.style,
+        handling: car.handling,
+        acceleration: car.acceleration,
+      });
+    }
+  }, [cars, profile]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
     const engine = new GameEngine(canvasRef.current);
     engineRef.current = engine;
     engine.onHud = (s) => setHud({ ...s });
+    engine.onRunEnd = (run) => {
+      if (!signedInRef.current) return;
+      void send({ data: { ...run, carSlug: carSlugRef.current } }).catch(() => {
+        /* score sync failed — local best still shown */
+      });
+    };
+
 
     const onResize = () => engine.resize();
     window.addEventListener("resize", onResize);
