@@ -14,16 +14,204 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cars: {
+        Row: {
+          acceleration: number
+          accent: string
+          braking: number
+          color: string
+          created_at: string
+          description: string
+          handling: number
+          id: string
+          name: string
+          rarity: string
+          slug: string
+          sort_order: number
+          speed: number
+          style: number
+          unlock_type: string
+          unlock_value: number
+        }
+        Insert: {
+          acceleration?: number
+          accent: string
+          braking?: number
+          color: string
+          created_at?: string
+          description?: string
+          handling?: number
+          id?: string
+          name: string
+          rarity?: string
+          slug: string
+          sort_order?: number
+          speed?: number
+          style?: number
+          unlock_type?: string
+          unlock_value?: number
+        }
+        Update: {
+          acceleration?: number
+          accent?: string
+          braking?: number
+          color?: string
+          created_at?: string
+          description?: string
+          handling?: number
+          id?: string
+          name?: string
+          rarity?: string
+          slug?: string
+          sort_order?: number
+          speed?: number
+          style?: number
+          unlock_type?: string
+          unlock_value?: number
+        }
+        Relationships: []
+      }
+      game_runs: {
+        Row: {
+          car_slug: string
+          coins: number
+          created_at: string
+          duration_ms: number
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          car_slug?: string
+          coins?: number
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          score: number
+          user_id: string
+        }
+        Update: {
+          car_slug?: string
+          coins?: number
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          games_played: number
+          high_score: number
+          id: string
+          selected_car_slug: string
+          total_coins: number
+          total_score: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          games_played?: number
+          high_score?: number
+          id: string
+          selected_car_slug?: string
+          total_coins?: number
+          total_score?: number
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          games_played?: number
+          high_score?: number
+          id?: string
+          selected_car_slug?: string
+          total_coins?: number
+          total_score?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_car_slug_fkey"
+            columns: ["selected_car_slug"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      unlocked_cars: {
+        Row: {
+          car_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          car_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          car_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unlocked_cars_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_player_rank: { Args: { _user_id: string }; Returns: number }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "player"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +338,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "player"],
+    },
   },
 } as const
