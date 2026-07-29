@@ -41,6 +41,8 @@ export function Game() {
   const { data: profile } = useProfile(user?.id);
   const send = useServerFn(submitRun);
   const carSlugRef = useRef(DEFAULT_CAR_SLUG);
+  const signedInRef = useRef(false);
+  signedInRef.current = !!user;
 
   // Apply the equipped car (account car when signed in, local pick for guests).
   useEffect(() => {
@@ -64,7 +66,7 @@ export function Game() {
     engineRef.current = engine;
     engine.onHud = (s) => setHud({ ...s });
     engine.onRunEnd = (run) => {
-      if (!user) return;
+      if (!signedInRef.current) return;
       void send({ data: { ...run, carSlug: carSlugRef.current } }).catch(() => {
         /* score sync failed — local best still shown */
       });
