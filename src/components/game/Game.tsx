@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { GameEngine } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
 import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
+import { submitRun } from "@/lib/game.functions";
+import {
+  DEFAULT_CAR_SLUG,
+  getLocalCarSlug,
+  useCars,
+  useProfile,
+  useSessionUser,
+} from "@/lib/account";
+
 
 const INITIAL: HudState = {
   phase: "menu",
