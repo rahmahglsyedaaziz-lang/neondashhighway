@@ -77,6 +77,16 @@ export class GameEngine {
 
   phase: GamePhase = "menu";
   onHud: (s: HudState) => void = () => {};
+  onRunEnd: (run: { score: number; coins: number; durationMs: number }) => void = () => {};
+
+  /** Cosmetics + light stat tuning coming from the garage. Defaults = original car. */
+  private car = { color: "#00e5ff", accent: "#e9fdff", style: 2, handling: 6, acceleration: 5 };
+  private runStart = 0;
+
+  setCar(car: { color: string; accent: string; style: number; handling: number; acceleration: number }) {
+    this.car = { ...car };
+  }
+
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
