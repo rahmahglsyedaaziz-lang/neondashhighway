@@ -37,21 +37,24 @@ export function MiniLeaderboard() {
       {isLoading && <p className="mt-2 text-xs text-muted-foreground">Loading standings…</p>}
 
       <ol className="mt-2 space-y-1">
-        {data?.map((row, i) => (
-          <li
-            key={row.id}
-            className={`flex items-center gap-2 rounded-lg px-2 py-1 text-sm ${
-              row.id === user?.id ? "bg-primary/15 text-primary" : ""
-            }`}
-          >
-            <span className="w-5 shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
-              {i + 1}
-            </span>
-            {i === 0 && <Crown className="size-3.5 shrink-0 text-accent" />}
-            <span className="flex-1 truncate font-semibold">{row.username}</span>
-            <span className="tabular-nums">{row.high_score}</span>
-          </li>
-        ))}
+        {data?.map((row, i) => {
+          const isMe = row.id === user?.id;
+          return (
+            <li
+              key={row.id}
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 text-sm ${
+                isMe ? "bg-primary/15 text-primary animate-rank-highlight" : ""
+              }`}
+            >
+              <span className="w-5 shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
+                {i + 1}
+              </span>
+              {i === 0 && <Crown className="size-3.5 shrink-0 text-accent" />}
+              <span className="flex-1 truncate font-semibold">{row.username}</span>
+              <span className="tabular-nums">{row.high_score}</span>
+            </li>
+          );
+        })}
       </ol>
 
       {data?.length === 0 && (
