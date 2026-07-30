@@ -30,6 +30,14 @@ const INITIAL: HudState = {
   timeOfDay: "day",
   unlocked: [],
   lastAchievement: null,
+  nearMisses: 0,
+  bestCombo: 0,
+  nearMissEvent: null,
+  distanceM: 0,
+  policeActive: false,
+  policeRemaining: 0,
+  policeEscapedFlash: false,
+  policeEscapes: 0,
 };
 
 export function Game() {
