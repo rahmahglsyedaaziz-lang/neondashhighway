@@ -88,4 +88,16 @@ export interface HudState {
   timeOfDay: "day" | "sunset" | "night";
   unlocked: string[];
   lastAchievement: string | null;
+  /** Near miss system */
+  nearMisses: number;
+  bestCombo: number;
+  nearMissEvent: NearMissEvent | null;
+  /** Distance travelled this run, in meters. */
+  distanceM: number;
+  /** Police pursuit */
+  policeActive: boolean;
+  policeRemaining: number;
+  policeEscapedFlash: boolean;
+  policeEscapes: number;
+
 }
