@@ -24,7 +24,7 @@ export function GameOverModal({ hud, onRestart }: Props) {
 
   return (
     <div className="animate-fade-in absolute inset-0 z-30 flex items-center justify-center bg-background/80 px-4 backdrop-blur-md">
-      <div className="animate-pop panel w-full max-w-sm text-center">
+      <div className="animate-pop panel max-h-[92%] w-full max-w-sm overflow-y-auto text-center">
         <h2 className="text-glow-destructive text-3xl font-black tracking-tight">CRASHED</h2>
         {isRecord && (
           <p className="mt-1 flex items-center justify-center gap-1 text-sm font-semibold text-accent">
@@ -66,6 +66,9 @@ export function GameOverModal({ hud, onRestart }: Props) {
             </span>
           ))}
         </div>
+
+        <MiniLeaderboard />
+
 
         <div className="mt-6 flex gap-3">
           <button className="btn-neon flex-1" onClick={onRestart}>
