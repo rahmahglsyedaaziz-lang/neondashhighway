@@ -24,9 +24,17 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
             <span className="hud-label">Level {hud.level}</span>
             <span className="hud-sub uppercase tracking-[0.2em]">{hud.timeOfDay}</span>
           </div>
-          {hud.combo > 1 && (
-            <div className="animate-pop rounded-full border border-accent/60 bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
+          {hud.combo > 0 && (
+            <div
+              key={hud.combo}
+              className="animate-pop rounded-full border border-accent/60 bg-accent/15 px-3 py-1 text-xs font-bold text-accent"
+            >
               NEAR MISS x{hud.combo}
+            </div>
+          )}
+          {hud.policeActive && (
+            <div className="animate-pop rounded-full border border-destructive/70 bg-destructive/20 px-3 py-1 text-xs font-black tracking-wider text-destructive">
+              🚨 SURVIVE {hud.policeRemaining}s
             </div>
           )}
         </div>
@@ -52,6 +60,27 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
         {hud.slowMs > 0 && <span className="pill pill-slow">SLOW MOTION</span>}
         {hud.coins > 0 && <span className="pill pill-coin">{hud.coins} coins</span>}
       </div>
+
+      {hud.nearMissEvent && (
+        <div
+          key={hud.nearMissEvent.id}
+          className="animate-near-miss pointer-events-none absolute inset-x-0 top-1/3 text-center"
+          style={{ opacity: 0.75 + hud.nearMissEvent.intensity * 0.25 }}
+        >
+          <span className="text-glow-accent text-2xl font-black tracking-tight sm:text-4xl">
+            🔥 NEAR MISS! +{hud.nearMissEvent.points}
+          </span>
+          {hud.nearMissEvent.combo > 1 && (
+            <p className="mt-1 text-sm font-bold text-accent">{hud.nearMissEvent.combo}X COMBO</p>
+          )}
+        </div>
+      )}
+
+      {hud.policeEscapedFlash && (
+        <div className="animate-pop pointer-events-none absolute inset-x-0 top-1/4 text-center">
+          <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED! +1500</span>
+        </div>
+      )}
 
       {hud.lastAchievement && (
         <div className="animate-fade-up mx-auto mt-3 w-fit rounded-xl border border-primary/50 bg-card/85 px-4 py-2 text-sm font-semibold text-primary backdrop-blur">

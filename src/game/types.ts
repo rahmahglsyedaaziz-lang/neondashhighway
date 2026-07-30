@@ -7,6 +7,8 @@ export interface Rect {
   h: number;
 }
 
+export type TrafficKind = "car" | "truck";
+
 export interface TrafficCar extends Rect {
   active: boolean;
   lane: number;
@@ -16,7 +18,33 @@ export interface TrafficCar extends Rect {
   style: number;
   scored: boolean;
   nearMissed: boolean;
+  kind: TrafficKind;
 }
+
+export interface PoliceUnit extends Rect {
+  lane: number;
+  targetLane: number;
+  laneTimer: number;
+}
+
+export interface NearMissEvent {
+  id: number;
+  points: number;
+  combo: number;
+  /** 0..1 — how close the graze was (1 = paint-scraping). */
+  intensity: number;
+}
+
+export interface RunStats {
+  score: number;
+  coins: number;
+  durationMs: number;
+  nearMisses: number;
+  bestCombo: number;
+  distanceM: number;
+  policeEscapes: number;
+}
+
 
 export type PickupKind = "coin" | "boost" | "slowmo";
 
@@ -60,4 +88,16 @@ export interface HudState {
   timeOfDay: "day" | "sunset" | "night";
   unlocked: string[];
   lastAchievement: string | null;
+  /** Near miss system */
+  nearMisses: number;
+  bestCombo: number;
+  nearMissEvent: NearMissEvent | null;
+  /** Distance travelled this run, in meters. */
+  distanceM: number;
+  /** Police pursuit */
+  policeActive: boolean;
+  policeRemaining: number;
+  policeEscapedFlash: boolean;
+  policeEscapes: number;
+
 }

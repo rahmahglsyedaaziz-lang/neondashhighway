@@ -1,5 +1,5 @@
 import { DifficultyManager } from "./DifficultyManager";
-import { collides, isNearMiss } from "./CollisionManager";
+import { collides, nearMissGap } from "./CollisionManager";
 import { SoundManager } from "./SoundManager";
 import { TrafficSpawner } from "./TrafficSpawner";
 import {
@@ -11,7 +11,7 @@ import {
   drawRoad,
   drawSpeedLines,
 } from "./render";
-import type { GamePhase, HudState, Particle, Rect } from "./types";
+import type { GamePhase, HudState, NearMissEvent, Particle, PoliceUnit, Rect, RunStats } from "./types";
 
 const LANES = 3;
 const HS_KEY = "traffic-dodge:highscore";
@@ -73,11 +73,29 @@ export class GameEngine {
   private slowMs = 0;
   private crashed = false;
   private unlocked: string[] = [];
+
+  /* near miss system */
+  private nearMisses = 0;
+  private bestCombo = 0;
+  private nearMissEvent: NearMissEvent | null = null;
+  private nearMissEventTimer = 0;
+  private eventId = 0;
+  private nearMissFlash = 0;
+  private distanceM = 0;
+
+  /* police pursuit */
+  private police: PoliceUnit[] = [];
+  private policeActive = false;
+  private policeRemaining = 0;
+  private policeCooldown = 20;
+  private policeEscapes = 0;
+  private policeEscapedFlash = 0;
+  private sirenTimer = 0;
   private lastAchievement: string | null = null;
 
   phase: GamePhase = "menu";
   onHud: (s: HudState) => void = () => {};
-  onRunEnd: (run: { score: number; coins: number; durationMs: number }) => void = () => {};
+  onRunEnd: (run: RunStats) => void = () => {};
 
   /** Cosmetics + light stat tuning coming from the garage. Defaults = original car. */
   private car = { color: "#00e5ff", accent: "#e9fdff", style: 2, handling: 6, acceleration: 5 };
@@ -173,6 +191,19 @@ export class GameEngine {
     this.slowMs = 0;
     this.crashed = false;
     this.shake = 0;
+    this.nearMisses = 0;
+    this.bestCombo = 0;
+    this.nearMissEvent = null;
+    this.nearMissEventTimer = 0;
+    this.nearMissFlash = 0;
+    this.distanceM = 0;
+    this.police.length = 0;
+    this.policeActive = false;
+    this.policeRemaining = 0;
+    this.policeCooldown = 18 + Math.random() * 14;
+    this.policeEscapes = 0;
+    this.policeEscapedFlash = 0;
+    this.sirenTimer = 0;
     this.particles.length = 0;
     this.playerLane = 1;
     this.targetLane = 1;
@@ -232,10 +263,17 @@ export class GameEngine {
       return;
     }
 
-    const profile = this.difficulty.profile;
+    const base = this.difficulty.profile;
+    // A pursuit raises the tempo a little, never to an unfair degree.
+    const profile = this.policeActive
+      ? { ...base, speed: base.speed * 1.12, spawnInterval: base.spawnInterval * 0.85 }
+      : base;
     const slowFactor = this.slowMs > 0 ? 0.5 : 1;
     const boostFactor = this.boostMs > 0 ? 1.45 : 1;
     const worldSpeed = profile.speed * slowFactor * boostFactor;
+    // ~10 canvas units per meter keeps distances in a believable range.
+    this.distanceM += (worldSpeed * dt) / 10;
+    this.updatePolice(dt);
 
     this.boostMs = Math.max(0, this.boostMs - dt * 1000);
     this.slowMs = Math.max(0, this.slowMs - dt * 1000);
@@ -263,13 +301,14 @@ export class GameEngine {
       if (!car.active) continue;
       car.y += (car.speed * slowFactor * boostFactor) * dt;
 
-      if (!car.nearMissed && isNearMiss(this.player, car, this.player.w * 0.42)) {
-        car.nearMissed = true;
-        this.combo += 1;
-        this.comboTimer = 2.5;
-        this.score += Math.min(5, this.combo);
-        this.sound.nearMiss(this.combo);
-        this.emitSparks(car.x + car.w / 2, car.y + car.h / 2, 8, "#00e5ff");
+      // Each vehicle can only ever award one near miss (car.nearMissed latch).
+      if (!car.nearMissed) {
+        const threshold = this.player.w * 0.45;
+        const gap = nearMissGap(this.player, car);
+        if (gap >= 0 && gap < threshold) {
+          car.nearMissed = true;
+          this.registerNearMiss(car.x + car.w / 2, car.y + car.h / 2, 1 - gap / threshold);
+        }
       }
 
       if (collides(this.player, car)) {
@@ -316,10 +355,16 @@ export class GameEngine {
     this.comboTimer -= dt;
     if (this.comboTimer <= 0 && this.combo > 0) this.combo = 0;
 
-    this.difficulty.update(this.score);
+    this.difficulty.update(this.distanceM);
     this.displayScore += (this.score - this.displayScore) * Math.min(1, dt * 9);
     if (Math.abs(this.score - this.displayScore) < 0.5) this.displayScore = this.score;
     this.shake *= 0.88;
+    this.nearMissFlash = Math.max(0, this.nearMissFlash - dt * 2.2);
+    if (this.nearMissEvent) {
+      this.nearMissEventTimer -= dt;
+      if (this.nearMissEventTimer <= 0) this.nearMissEvent = null;
+    }
+    if (this.policeEscapedFlash > 0) this.policeEscapedFlash = Math.max(0, this.policeEscapedFlash - dt);
     this.checkAchievements();
     this.pushHud();
   }
@@ -327,6 +372,12 @@ export class GameEngine {
   private crash() {
     this.crashed = true;
     this.phase = "gameover";
+    // A crash always wipes the running near miss combo.
+    this.combo = 0;
+    this.comboTimer = 0;
+    this.nearMissEvent = null;
+    this.policeActive = false;
+    this.police.length = 0;
     this.shake = 26;
     this.sound.crash();
     this.sound.stopMusic();
@@ -348,9 +399,98 @@ export class GameEngine {
       score: this.score,
       coins: this.coins,
       durationMs: Math.max(0, Math.round(performance.now() - this.runStart)),
+      nearMisses: this.nearMisses,
+      bestCombo: this.bestCombo,
+      distanceM: Math.round(this.distanceM),
+      policeEscapes: this.policeEscapes,
     });
   }
 
+
+  /* ---------- near miss ---------- */
+
+  /** @param intensity 0..1, 1 = paint-scraping close. */
+  private registerNearMiss(x: number, y: number, intensity: number) {
+    this.combo += 1;
+    this.comboTimer = 3;
+    this.nearMisses += 1;
+    this.bestCombo = Math.max(this.bestCombo, this.combo);
+
+    const points = 100 * Math.min(this.combo, 10);
+    this.score += points;
+
+    this.eventId += 1;
+    this.nearMissEvent = { id: this.eventId, points, combo: this.combo, intensity };
+    this.nearMissEventTimer = 1.1;
+    this.nearMissFlash = Math.min(1, 0.35 + intensity * 0.65);
+    this.shake = Math.max(this.shake, 3 + intensity * 5);
+
+    this.sound.nearMissHit(this.combo, intensity);
+    this.emitSparks(x, y, 8 + Math.round(intensity * 14), intensity > 0.6 ? "#ffd400" : "#00e5ff");
+  }
+
+  /* ---------- police pursuit ---------- */
+
+  private updatePolice(dt: number) {
+    if (!this.policeActive) {
+      this.policeCooldown -= dt;
+      // Random pursuits keep every run different, but only once the player is rolling.
+      if (this.policeCooldown <= 0 && this.distanceM > 700 && Math.random() < dt * 0.08) {
+        this.startPursuit();
+      }
+      return;
+    }
+
+    this.policeRemaining -= dt;
+    this.sirenTimer -= dt;
+    if (this.sirenTimer <= 0) {
+      this.sirenTimer = 1.1;
+      this.sound.sirenWail();
+    }
+
+    // Cruisers weave behind the player. They never collide, so a pursuit adds
+    // pressure and spectacle without ever becoming an unavoidable death.
+    for (const unit of this.police) {
+      unit.laneTimer -= dt;
+      if (unit.laneTimer <= 0) {
+        unit.laneTimer = 0.5 + Math.random() * 0.7;
+        const drift = Math.random() < 0.65 ? this.targetLane : Math.floor(Math.random() * LANES);
+        unit.targetLane = Math.max(0, Math.min(LANES - 1, drift));
+      }
+      const tx = this.laneX(unit.targetLane) - unit.w / 2;
+      unit.x += (tx - unit.x) * Math.min(1, dt * 5);
+      const ty = this.height - unit.h * (0.55 + 0.25 * Math.sin(this.time * 1.6 + unit.lane));
+      unit.y += (ty - unit.y) * Math.min(1, dt * 2.2);
+    }
+
+    if (this.policeRemaining <= 0) this.endPursuit();
+  }
+
+  private startPursuit() {
+    this.policeActive = true;
+    this.policeRemaining = 30;
+    this.sirenTimer = 0;
+    this.police = [0, 1].map((i) => ({
+      lane: this.targetLane,
+      targetLane: this.targetLane,
+      laneTimer: 0.3 + i * 0.4,
+      w: this.player.w,
+      h: this.player.h,
+      x: this.laneX(this.targetLane) - this.player.w / 2,
+      y: this.height + this.player.h * (1 + i * 0.6),
+    }));
+    this.sound.policeStart();
+  }
+
+  private endPursuit() {
+    this.policeActive = false;
+    this.police.length = 0;
+    this.policeEscapes += 1;
+    this.policeEscapedFlash = 3;
+    this.score += 1500;
+    this.sound.escaped();
+    this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 30, "#00ff9d");
+  }
 
   private checkAchievements() {
     const unlock = (id: string) => {
@@ -440,6 +580,17 @@ export class GameEngine {
       drawCar(ctx, car, car.color, car.accent, car.style, { headlights: false });
     }
 
+    for (const unit of this.police) {
+      const flash = Math.floor(this.time * 8) % 2 === 0;
+      drawCar(ctx, unit, "#0f1a3a", "#e8ecff", 0, { glow: flash ? "#2f6bff" : "#ff2d4f" });
+      ctx.save();
+      ctx.fillStyle = flash ? "#2f6bff" : "#ff2d4f";
+      ctx.shadowColor = ctx.fillStyle as string;
+      ctx.shadowBlur = 22;
+      ctx.fillRect(unit.x + unit.w * 0.18, unit.y + unit.h * 0.12, unit.w * 0.64, unit.h * 0.07);
+      ctx.restore();
+    }
+
     if (!this.crashed) {
       drawCar(ctx, this.player, this.car.color, this.car.accent, this.car.style, {
         tilt: this.tilt,
@@ -450,6 +601,17 @@ export class GameEngine {
     }
 
     drawParticles(ctx, this.particles);
+
+    if (this.nearMissFlash > 0) {
+      ctx.fillStyle = `rgba(255,212,0,${(this.nearMissFlash * 0.1).toFixed(3)})`;
+      ctx.fillRect(0, 0, this.width, this.height);
+    }
+
+    if (this.policeActive) {
+      const pulse = (Math.sin(this.time * 7) + 1) / 2;
+      ctx.fillStyle = `rgba(${pulse > 0.5 ? "47,107,255" : "255,45,79"},0.07)`;
+      ctx.fillRect(0, 0, this.width, this.height);
+    }
 
     if (this.slowMs > 0) {
       ctx.fillStyle = "rgba(0,229,255,0.08)";
@@ -476,6 +638,14 @@ export class GameEngine {
       timeOfDay: this.timeOfDay,
       unlocked: this.unlocked,
       lastAchievement: this.lastAchievement,
+      nearMisses: this.nearMisses,
+      bestCombo: this.bestCombo,
+      nearMissEvent: this.nearMissEvent,
+      distanceM: Math.round(this.distanceM),
+      policeActive: this.policeActive,
+      policeRemaining: Math.max(0, Math.ceil(this.policeRemaining)),
+      policeEscapedFlash: this.policeEscapedFlash > 0,
+      policeEscapes: this.policeEscapes,
     });
   }
 

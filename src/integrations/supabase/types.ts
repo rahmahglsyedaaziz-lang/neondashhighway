@@ -71,31 +71,120 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          created_at: string
+          id: string
+          progress: number
+          reward_claimed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          progress?: number
+          reward_claimed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          progress?: number
+          reward_claimed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          challenge_date: string
+          created_at: string
+          description: string
+          id: string
+          kind: string
+          reward_coins: number
+          target: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          challenge_date: string
+          created_at?: string
+          description: string
+          id?: string
+          kind: string
+          reward_coins?: number
+          target: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          challenge_date?: string
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: string
+          reward_coins?: number
+          target?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_runs: {
         Row: {
+          best_combo: number
           car_slug: string
           coins: number
           created_at: string
+          distance_m: number
           duration_ms: number
           id: string
+          near_misses: number
+          police_escapes: number
           score: number
           user_id: string
         }
         Insert: {
+          best_combo?: number
           car_slug?: string
           coins?: number
           created_at?: string
+          distance_m?: number
           duration_ms?: number
           id?: string
+          near_misses?: number
+          police_escapes?: number
           score: number
           user_id: string
         }
         Update: {
+          best_combo?: number
           car_slug?: string
           coins?: number
           created_at?: string
+          distance_m?: number
           duration_ms?: number
           id?: string
+          near_misses?: number
+          police_escapes?: number
           score?: number
           user_id?: string
         }
@@ -234,6 +323,26 @@ export type Database = {
       }
     }
     Functions: {
+      ensure_daily_challenge: {
+        Args: never
+        Returns: {
+          challenge_date: string
+          created_at: string
+          description: string
+          id: string
+          kind: string
+          reward_coins: number
+          target: number
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "daily_challenges"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_player_rank: { Args: { _user_id: string }; Returns: number }
       has_role: {
         Args: {

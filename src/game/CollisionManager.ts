@@ -25,3 +25,14 @@ export function isNearMiss(player: Rect, car: Rect, threshold: number): boolean 
   const gap = Math.abs(player.x + player.w / 2 - (car.x + car.w / 2)) - (player.w + car.w) / 2;
   return gap > 0 && gap < threshold;
 }
+
+/**
+ * Lateral gap between player and car while they overlap vertically.
+ * Returns -1 when they are not side by side (or already touching).
+ */
+export function nearMissGap(player: Rect, car: Rect): number {
+  const verticalOverlap = player.y < car.y + car.h && player.y + player.h > car.y;
+  if (!verticalOverlap) return -1;
+  const gap = Math.abs(player.x + player.w / 2 - (car.x + car.w / 2)) - (player.w + car.w) / 2;
+  return gap > 0 ? gap : -1;
+}

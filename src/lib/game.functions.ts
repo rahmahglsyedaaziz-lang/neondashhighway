@@ -7,6 +7,10 @@ const runSchema = z.object({
   coins: z.number().int().min(0).max(10000),
   durationMs: z.number().int().min(0).max(6 * 60 * 60 * 1000),
   carSlug: z.string().min(1).max(60),
+  nearMisses: z.number().int().min(0).max(100000).default(0),
+  bestCombo: z.number().int().min(0).max(10000).default(0),
+  distanceM: z.number().int().min(0).max(10000000).default(0),
+  policeEscapes: z.number().int().min(0).max(1000).default(0),
 });
 
 /**
@@ -19,7 +23,8 @@ export const submitRun = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => runSchema.parse(data))
   .handler(async ({ data, context }) => {
     const seconds = data.durationMs / 1000;
-    const plausibleMax = 15 + seconds * 8;
+    // Near-miss bonuses (up to 1000/s) and pursuit bonuses widen the ceiling.
+    const plausibleMax = 300 + seconds * 900;
     if (data.score > plausibleMax || data.coins > 4 + seconds * 2) {
       throw new Error("Run rejected: score is not consistent with the run duration.");
     }
@@ -41,6 +46,10 @@ export const submitRun = createServerFn({ method: "POST" })
       coins: data.coins,
       duration_ms: data.durationMs,
       car_slug: data.carSlug,
+      near_misses: data.nearMisses,
+      best_combo: data.bestCombo,
+      distance_m: data.distanceM,
+      police_escapes: data.policeEscapes,
     });
 
     const isNewBest = data.score > profile.high_score;
