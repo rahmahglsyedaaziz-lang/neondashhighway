@@ -197,7 +197,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          games_played: number | null
+          high_score: number | null
+          id: string | null
+          selected_car_slug: string | null
+          total_coins: number | null
+          username: string | null
+        }
+        Insert: {
+          games_played?: number | null
+          high_score?: number | null
+          id?: string | null
+          selected_car_slug?: string | null
+          total_coins?: number | null
+          username?: string | null
+        }
+        Update: {
+          games_played?: number | null
+          high_score?: number | null
+          id?: string | null
+          selected_car_slug?: string | null
+          total_coins?: number | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_car_slug_fkey"
+            columns: ["selected_car_slug"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
     }
     Functions: {
       get_player_rank: { Args: { _user_id: string }; Returns: number }
