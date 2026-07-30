@@ -34,7 +34,7 @@ function LeaderboardPage() {
     queryKey: ["leaderboard"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("leaderboard")
         .select("id, username, high_score, games_played, total_coins, selected_car_slug")
         .order("high_score", { ascending: false })
         .order("games_played", { ascending: true })
