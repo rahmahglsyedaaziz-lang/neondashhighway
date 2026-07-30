@@ -64,6 +64,7 @@ export class TrafficSpawner {
       style: 0,
       scored: false,
       nearMissed: false,
+      kind: "car",
     };
     this.pool.push(car);
     return car;
@@ -126,17 +127,21 @@ export class TrafficSpawner {
       // Maintain safe vertical spacing so cars never overlap or stack unfairly.
       if (top && top.y > -minGap) continue;
       const car = this.obtain();
-      const [color, accent] = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      const isTruck = Math.random() < profile.truckChance;
+      const [color, accent] = isTruck
+        ? (["#8ea0b5", "#e6eef7"] as [string, string])
+        : PALETTE[Math.floor(Math.random() * PALETTE.length)];
       car.active = true;
+      car.kind = isTruck ? "truck" : "car";
       car.lane = lane;
-      car.w = ctx.carW;
-      car.h = ctx.carH;
-      car.x = ctx.laneX(lane) - ctx.carW / 2;
-      car.y = -ctx.carH - Math.random() * ctx.carH * 0.6 * profile.randomness;
-      car.speed = profile.speed * (1 + (Math.random() - 0.5) * 0.18 * profile.randomness);
+      car.w = ctx.carW * (isTruck ? 1.02 : 1);
+      car.h = ctx.carH * (isTruck ? 1.5 : 1);
+      car.x = ctx.laneX(lane) - car.w / 2;
+      car.y = -car.h - Math.random() * ctx.carH * 0.6 * profile.randomness;
+      car.speed = profile.speed * (isTruck ? 0.88 : 1) * (1 + (Math.random() - 0.5) * 0.18 * profile.randomness);
       car.color = color;
       car.accent = accent;
-      car.style = Math.floor(Math.random() * 3);
+      car.style = isTruck ? 1 : Math.floor(Math.random() * 3);
       car.scored = false;
       car.nearMissed = false;
       spawned++;

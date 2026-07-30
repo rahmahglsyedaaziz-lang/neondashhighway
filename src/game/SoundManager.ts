@@ -98,6 +98,28 @@ export class SoundManager {
     this.blip(660 + Math.min(combo, 8) * 60, 0.16, "square", 0.1);
   }
 
+  /** Rising, brighter tone the deeper the combo runs. */
+  nearMissHit(combo: number, intensity: number) {
+    const c = Math.min(combo, 8);
+    this.blip(520 + c * 70, 0.14, "square", 0.09 + intensity * 0.05, 900 + c * 90);
+  }
+
+  sirenWail() {
+    this.blip(700, 0.45, "sine", 0.09, 1150);
+    window.setTimeout(() => this.blip(1150, 0.45, "sine", 0.09, 700), 450);
+  }
+
+  policeStart() {
+    this.blip(300, 0.4, "sawtooth", 0.16, 900);
+    window.setTimeout(() => this.sirenWail(), 200);
+  }
+
+  escaped() {
+    this.blip(440, 0.18, "triangle", 0.15, 660);
+    window.setTimeout(() => this.blip(660, 0.18, "triangle", 0.15, 990), 150);
+    window.setTimeout(() => this.blip(990, 0.3, "triangle", 0.15, 1320), 300);
+  }
+
   coin() {
     this.blip(880, 0.09, "square", 0.12);
     window.setTimeout(() => this.blip(1320, 0.12, "square", 0.1), 70);
