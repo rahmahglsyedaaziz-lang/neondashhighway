@@ -1,4 +1,7 @@
-/** Difficulty scales every 10 points and is capped so the game stays fair. */
+/**
+ * Distance-driven difficulty. Ramping on distance (instead of raw score) keeps
+ * the curve smooth now that near-miss bonuses can add large point chunks.
+ */
 export interface DifficultyProfile {
   level: number;
   /** Base traffic speed in world units per second. */
@@ -9,33 +12,41 @@ export interface DifficultyProfile {
   maxCarsPerWave: number;
   /** 0..1 how much per-car speed/position randomness is applied. */
   randomness: number;
+  /** 0..1 chance a spawned vehicle is a slower, longer truck. */
+  truckChance: number;
 }
 
 const MAX_LEVEL = 12;
+/** Meters of driving per difficulty level. */
+const METERS_PER_LEVEL = 420;
 
 export class DifficultyManager {
-  private level = 0;
+  /** Continuous progress (fractional levels) so speed ramps smoothly. */
+  private progress = 0;
 
   reset() {
-    this.level = 0;
+    this.progress = 0;
   }
 
-  update(score: number) {
-    this.level = Math.min(MAX_LEVEL, Math.floor(score / 10));
-    return this.level;
+  /** @param distanceM meters travelled in the current run. */
+  update(distanceM: number) {
+    this.progress = Math.min(MAX_LEVEL, distanceM / METERS_PER_LEVEL);
+    return this.currentLevel;
   }
 
   get currentLevel() {
-    return this.level;
+    return Math.floor(this.progress);
   }
 
   get profile(): DifficultyProfile {
-    const l = this.level;
-    // +10% speed per level, compounding, capped by MAX_LEVEL.
-    const speed = 260 * Math.pow(1.1, l);
-    const spawnInterval = Math.max(430, 1500 - l * 95);
-    const maxCarsPerWave = l >= 4 ? 2 : l >= 2 ? 2 : 1;
-    const randomness = Math.min(1, 0.25 + l * 0.08);
-    return { level: l, speed, spawnInterval, maxCarsPerWave, randomness };
+    const p = this.progress;
+    const l = this.currentLevel;
+    // Continuous +9% speed per level, compounding, capped by MAX_LEVEL.
+    const speed = 260 * Math.pow(1.09, p);
+    const spawnInterval = Math.max(450, 1500 - p * 88);
+    const maxCarsPerWave = l >= 2 ? 2 : 1;
+    const randomness = Math.min(1, 0.25 + p * 0.07);
+    const truckChance = Math.min(0.3, Math.max(0, (p - 2) * 0.05));
+    return { level: l, speed, spawnInterval, maxCarsPerWave, randomness, truckChance };
   }
 }
