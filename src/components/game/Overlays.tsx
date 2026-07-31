@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { Play } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { DailyRewardCard } from "@/components/game/DailyRewardCard";
+import type { RoadMode } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 
+const MODES: Array<{ id: RoadMode; icon: string; title: string; tagline: string }> = [
+  { id: "single", icon: "🏎️", title: "SINGLE LANE", tagline: "One lane. No mistakes." },
+  { id: "double", icon: "🏎️🏎️", title: "DOUBLE LANE", tagline: "Two lanes. More room. More traffic." },
+];
 
-export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void }) {
+export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (mode: RoadMode) => void }) {
+  const [mode, setMode] = useState<RoadMode>("double");
   if (hud.phase !== "menu") return null;
   return (
     <div className="animate-fade-in absolute inset-0 z-30 flex items-center justify-center bg-background/70 px-4 backdrop-blur-md">
