@@ -147,7 +147,13 @@ export function Game() {
       />
       <Countdown hud={hud} />
       <PauseOverlay hud={hud} onResume={() => engineRef.current?.togglePause()} />
-      <StartMenu hud={hud} onStart={() => engineRef.current?.start()} />
+      <StartMenu
+        hud={hud}
+        onStart={(mode) => {
+          engineRef.current?.setMode(mode);
+          engineRef.current?.start();
+        }}
+      />
       <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />
     </div>
   );
