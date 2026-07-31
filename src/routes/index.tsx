@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Weave through three lanes of neon traffic, collect coins and power-ups, and survive as long as you can.",
+          "Dodge neon highway traffic in this endless arcade racer. Chain near-miss combos, grab boosts and beat your high score on desktop or mobile.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -77,12 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Traffic Dodge" },
-      { name: "description", content: "Neon endless traffic dodging arcade game." },
-      { property: "og:title", content: "Traffic Dodge" },
-      { property: "og:description", content: "Neon endless traffic dodging arcade game." },
+      { title: "Traffic Dodge — Neon Endless Car Dodging Game" },
+      { name: "description", content: "Dodge neon highway traffic in this endless arcade racer. Chain near-miss combos, grab boosts and beat your high score on desktop or mobile." },
+      { property: "og:title", content: "Traffic Dodge — Neon Endless Car Dodging Game" },
+      { property: "og:description", content: "Dodge neon highway traffic in this endless arcade racer. Chain near-miss combos, grab boosts and beat your high score on desktop or mobile." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Traffic Dodge — Neon Endless Car Dodging Game" },
+      { name: "twitter:description", content: "Dodge neon highway traffic in this endless arcade racer. Chain near-miss combos, grab boosts and beat your high score on desktop or mobile." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/30fd7f9d-ede4-4184-adaa-abc14464eb9c/id-preview-b7dfe0d6--ca63028a-10d1-40e0-b3db-77a3e6a068f5.lovable.app-1785486767831.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/30fd7f9d-ede4-4184-adaa-abc14464eb9c/id-preview-b7dfe0d6--ca63028a-10d1-40e0-b3db-77a3e6a068f5.lovable.app-1785486767831.png" },
     ],
     links: [
       {
