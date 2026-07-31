@@ -7,7 +7,7 @@ import { useSessionUser } from "@/lib/account";
 import { NavBar } from "@/components/site/NavBar";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: { next?: unknown }): { next: string } => ({
     next: typeof s.next === "string" && s.next.startsWith("/") ? s.next : "/",
   }),
   head: () => ({

@@ -8,14 +8,51 @@ import type { HudState } from "@/game/types";
 
 const MODES: Array<{ id: RoadMode; icon: string; title: string; tagline: string }> = [
   { id: "single", icon: "🏎️", title: "SINGLE LANE", tagline: "One lane. No mistakes." },
-  { id: "double", icon: "🏎️🏎️", title: "DOUBLE LANE", tagline: "Two lanes. More room. More traffic." },
+  { id: "double", icon: "🏎️🏎️", title: "DOUBLE LANE", tagline: "Two lanes. More room to dodge." },
 ];
 
+function RoadModeDialog({
+  onPick,
+  onClose,
+}: {
+  onPick: (mode: RoadMode) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="animate-fade-in absolute inset-0 z-40 flex items-center justify-center bg-background/85 px-4 backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Choose your road"
+      onClick={onClose}
+    >
+      <div className="panel w-full max-w-sm text-center" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-glow-primary text-2xl font-black tracking-tight">CHOOSE YOUR ROAD</h2>
+        <div className="mt-4 grid gap-3">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onPick(m.id)}
+              className="rounded-xl border border-border bg-muted/20 p-3 text-left transition hover:border-primary hover:bg-primary/10"
+            >
+              <span className="text-lg">{m.icon}</span>
+              <span className="mt-1 block text-sm font-black tracking-tight">{m.title}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{m.tagline}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (mode: RoadMode) => void }) {
-  const [mode, setMode] = useState<RoadMode>("double");
+  const [picking, setPicking] = useState(false);
   if (hud.phase !== "menu") return null;
   return (
     <div className="animate-fade-in absolute inset-0 z-30 flex items-center justify-center bg-background/70 px-4 backdrop-blur-md">
+      {picking && <RoadModeDialog onPick={onStart} onClose={() => setPicking(false)} />}
       <div className="panel w-full max-w-md text-center">
         <p className="hud-label">Endless arcade racer</p>
         <h1 className="text-glow-primary mt-2 text-4xl font-black tracking-tight sm:text-5xl">
@@ -36,32 +73,8 @@ export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (mode: Roa
         </div>
         <DailyRewardCard />
 
-        <p className="hud-label mt-6 text-left">Choose road mode</p>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          {MODES.map((m) => {
-            const active = mode === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setMode(m.id)}
-                className={`rounded-xl border p-3 text-left transition ${
-                  active
-                    ? "border-primary bg-primary/10 shadow-[0_0_18px_hsl(var(--primary)/0.35)]"
-                    : "border-border bg-muted/20 hover:border-primary/60"
-                }`}
-              >
-                <span className="text-lg">{m.icon}</span>
-                <span className="mt-1 block text-sm font-black tracking-tight">{m.title}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{m.tagline}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <button className="btn-neon mt-4 w-full" onClick={() => onStart(mode)}>
-          <Play className="size-4" /> START GAME
+        <button className="btn-neon mt-6 w-full" onClick={() => setPicking(true)}>
+          <Play className="size-4" /> PLAY GAME
         </button>
         <div className="mt-3 flex gap-2">
           <Link to="/leaderboard" className="btn-ghost flex-1 !py-2 !text-xs">
