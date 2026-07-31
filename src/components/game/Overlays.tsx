@@ -1,7 +1,9 @@
 import { Play } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
+import { DailyRewardCard } from "@/components/game/DailyRewardCard";
 import type { HudState } from "@/game/types";
+
 
 export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void }) {
   if (hud.phase !== "menu") return null;
