@@ -148,6 +148,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_logins: {
+        Row: {
+          claim_date: string
+          coins_awarded: number
+          created_at: string
+          id: string
+          streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claim_date: string
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claim_date?: string
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_runs: {
         Row: {
           best_combo: number

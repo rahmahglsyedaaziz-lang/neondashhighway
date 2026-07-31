@@ -1,7 +1,9 @@
 import { Play } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
+import { DailyRewardCard } from "@/components/game/DailyRewardCard";
 import type { HudState } from "@/game/types";
+
 
 export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void }) {
   if (hud.phase !== "menu") return null;
@@ -25,8 +27,10 @@ export function StartMenu({ hud, onStart }: { hud: HudState; onStart: () => void
             <span className="text-2xl font-black tabular-nums">{hud.dailyBest}</span>
           </div>
         </div>
+        <DailyRewardCard />
         <button className="btn-neon mt-6 w-full" onClick={onStart}>
           <Play className="size-4" /> Start engine
+
         </button>
         <div className="mt-3 flex gap-2">
           <Link to="/leaderboard" className="btn-ghost flex-1 !py-2 !text-xs">
