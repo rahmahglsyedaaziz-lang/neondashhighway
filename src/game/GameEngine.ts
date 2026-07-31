@@ -14,6 +14,9 @@ import {
 import type { GamePhase, HudState, NearMissEvent, Particle, PoliceUnit, Rect, RunStats } from "./types";
 
 const LANES = 3;
+export type RoadMode = "single" | "double" | "classic";
+const MODE_LANES: Record<RoadMode, number> = { single: 2, double: 2, classic: LANES };
+const MODE_WIDTH: Record<RoadMode, number> = { single: 0.56, double: 1, classic: 1 };
 const HS_KEY = "traffic-dodge:highscore";
 const DAILY_KEY = "traffic-dodge:daily";
 const ACH_KEY = "traffic-dodge:achievements";
@@ -47,6 +50,8 @@ export class GameEngine {
   private height = 0;
   private roadX = 0;
   private roadW = 0;
+  private mode: RoadMode = "classic";
+  private lanes = LANES;
 
   private difficulty = new DifficultyManager();
   private spawner = new TrafficSpawner();
@@ -136,9 +141,9 @@ export class GameEngine {
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.roadW = Math.min(this.width * 0.92, this.height * 0.62, 560);
+    this.roadW = Math.min(this.width * 0.92, this.height * 0.62, 560) * MODE_WIDTH[this.mode];
     this.roadX = (this.width - this.roadW) / 2;
-    const laneW = this.roadW / LANES;
+    const laneW = this.roadW / this.lanes;
     this.player.w = laneW * 0.6;
     this.player.h = this.player.w * 1.85;
     this.player.y = this.height - this.player.h - this.height * 0.09;
@@ -146,7 +151,7 @@ export class GameEngine {
   }
 
   private laneX(lane: number) {
-    const laneW = this.roadW / LANES;
+    const laneW = this.roadW / this.lanes;
     return this.roadX + laneW * (lane + 0.5);
   }
 
@@ -154,7 +159,7 @@ export class GameEngine {
 
   move(dir: -1 | 1) {
     if (this.phase !== "playing") return;
-    const next = Math.max(0, Math.min(LANES - 1, this.targetLane + dir));
+    const next = Math.max(0, Math.min(this.lanes - 1, this.targetLane + dir));
     if (next === this.targetLane) return;
     this.targetLane = next;
     this.sound.laneSwitch();
@@ -178,6 +183,15 @@ export class GameEngine {
       this.sound.startMusic();
     }
     this.pushHud();
+  }
+
+  setMode(mode: RoadMode) {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    this.lanes = MODE_LANES[mode];
+    this.playerLane = Math.min(this.playerLane, this.lanes - 1);
+    this.targetLane = Math.min(this.targetLane, this.lanes - 1);
+    this.resize();
   }
 
   start() {
@@ -205,10 +219,11 @@ export class GameEngine {
     this.policeEscapedFlash = 0;
     this.sirenTimer = 0;
     this.particles.length = 0;
-    this.playerLane = 1;
-    this.targetLane = 1;
+    const startLane = Math.min(1, this.lanes - 1);
+    this.playerLane = startLane;
+    this.targetLane = startLane;
     this.tilt = 0;
-    this.player.x = this.laneX(1) - this.player.w / 2;
+    this.player.x = this.laneX(startLane) - this.player.w / 2;
     this.difficulty.reset();
     this.spawner.reset();
     this.countdown = 3.99;
@@ -289,7 +304,7 @@ export class GameEngine {
     if (Math.abs(dx) > this.player.w * 0.15 && Math.random() < 0.4) this.emitSmoke();
 
     this.spawner.update(dt, {
-      laneCount: LANES,
+      laneCount: this.lanes,
       laneX: (l) => this.laneX(l),
       carW: this.player.w,
       carH: this.player.h,
@@ -454,8 +469,8 @@ export class GameEngine {
       unit.laneTimer -= dt;
       if (unit.laneTimer <= 0) {
         unit.laneTimer = 0.5 + Math.random() * 0.7;
-        const drift = Math.random() < 0.65 ? this.targetLane : Math.floor(Math.random() * LANES);
-        unit.targetLane = Math.max(0, Math.min(LANES - 1, drift));
+        const drift = Math.random() < 0.65 ? this.targetLane : Math.floor(Math.random() * this.lanes);
+        unit.targetLane = Math.max(0, Math.min(this.lanes - 1, drift));
       }
       const tx = this.laneX(unit.targetLane) - unit.w / 2;
       unit.x += (tx - unit.x) * Math.min(1, dt * 5);
@@ -570,7 +585,7 @@ export class GameEngine {
     }
     drawBackdrop(ctx, this.width, this.height, this.roadX, this.roadW, sky);
     const neon = this.timeOfDay === "night" ? "#00e5ff" : this.timeOfDay === "sunset" ? "#ff2d6f" : "#7dfcd6";
-    drawRoad(ctx, this.height, this.roadX, this.roadW, LANES, this.scroll, neon, this.boostMs > 0);
+    drawRoad(ctx, this.height, this.roadX, this.roadW, this.mode === "single" ? 1 : this.lanes, this.scroll, neon, this.boostMs > 0);
     drawSpeedLines(ctx, this.width, this.height, this.time, this.boostMs > 0 ? 0.6 : this.difficulty.currentLevel / 20);
 
     for (const p of this.spawner.pickups) if (p.active) drawPickup(ctx, p);
