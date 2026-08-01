@@ -58,6 +58,8 @@ export function Game() {
   const { data: cars } = useCars();
   const { data: profile } = useProfile(user?.id);
   const send = useServerFn(submitRun);
+  const sendCareer = useServerFn(completeCareerLevel);
+  const queryClient = useQueryClient();
   const carSlugRef = useRef(DEFAULT_CAR_SLUG);
   const signedInRef = useRef(false);
   signedInRef.current = !!user;
