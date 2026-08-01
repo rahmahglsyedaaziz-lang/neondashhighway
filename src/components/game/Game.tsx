@@ -170,14 +170,6 @@ export function Game() {
         }}
       />
       <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />
-      <CareerCompleteHook />
-    </div>
-  );
-}
-
-/** Rendered for structural symmetry; career completion is handled in the engine hook. */
-function CareerCompleteHook() {
-  return null;
     </div>
   );
 }
