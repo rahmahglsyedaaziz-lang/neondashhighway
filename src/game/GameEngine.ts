@@ -498,6 +498,41 @@ export class GameEngine {
   }
 
 
+  /** Career level cleared: ends the run as a win, not a crash. */
+  private finishCareerLevel() {
+    this.careerComplete = true;
+    this.phase = "gameover";
+    this.policeActive = false;
+    this.police.length = 0;
+    this.score += 500;
+    this.sound.escaped();
+    this.sound.stopMusic();
+    this.sound.stopEngine();
+    this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 40, "#00ff9d");
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      window.localStorage.setItem(HS_KEY, String(this.score));
+    }
+    if (this.score > this.dailyBest) {
+      this.dailyBest = this.score;
+      window.localStorage.setItem(DAILY_KEY, JSON.stringify({ date: todayKey(), score: this.score }));
+    }
+    this.displayScore = this.score;
+    this.pushHud();
+    this.onRunEnd({
+      score: this.score,
+      coins: this.coins,
+      durationMs: Math.max(0, Math.round(performance.now() - this.runStart)),
+      nearMisses: this.nearMisses,
+      bestCombo: this.bestCombo,
+      distanceM: Math.round(this.distanceM),
+      policeEscapes: this.policeEscapes,
+    });
+    this.onCareerComplete(this.careerLevel, this.score);
+  }
+
+  onCareerComplete: (level: number, score: number) => void = () => {};
+
   /* ---------- near miss ---------- */
 
   /** @param intensity 0..1, 1 = paint-scraping close. */
@@ -567,7 +602,8 @@ export class GameEngine {
     this.patrolCooldown -= dt;
     if (this.patrolCooldown <= 0 && this.patrols.length < 2) {
       this.patrolCooldown = 12 + Math.random() * 16;
-      const lane = Math.floor(Math.random() * this.lanes);
+      const lanes = this.playerLanes;
+      const lane = lanes[Math.floor(Math.random() * lanes.length)];
       this.patrols.push({
         active: true,
         lane,
