@@ -804,6 +804,9 @@ export class GameEngine {
       policeRemaining: Math.max(0, Math.ceil(this.policeRemaining)),
       policeEscapedFlash: this.policeEscapedFlash > 0,
       policeEscapes: this.policeEscapes,
+      pursuitStartFlash: this.pursuitStartFlash > 0,
+      exitAvailable: this.exits.some((e) => e.active && !e.taken && e.y + e.h > 0 && e.y < this.height),
+      exitSide: this.exits.find((e) => e.active && !e.taken)?.side ?? null,
     });
   }
 
