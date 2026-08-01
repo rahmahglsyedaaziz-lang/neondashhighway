@@ -89,7 +89,7 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
 
       {hud.policeEscapedFlash && (
         <div className="animate-pop pointer-events-none absolute inset-x-0 top-1/4 text-center">
-          <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED! +1500</span>
+          <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED!</span>
         </div>
       )}
 
