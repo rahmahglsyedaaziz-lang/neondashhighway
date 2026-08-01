@@ -24,10 +24,10 @@ import type {
   RunStats,
 } from "./types";
 
-const LANES = 3;
-export type RoadMode = "single" | "double" | "classic";
-const MODE_LANES: Record<RoadMode, number> = { single: 2, double: 2, classic: LANES };
-const MODE_WIDTH: Record<RoadMode, number> = { single: 0.56, double: 1, classic: 1 };
+const LANES = 4;
+/** Infinity traffic layouts — same highway, different traffic configuration. */
+export type TrafficMode = "oneway" | "twoway";
+export type GameMode = "career" | "infinity";
 const HS_KEY = "traffic-dodge:highscore";
 const DAILY_KEY = "traffic-dodge:daily";
 const ACH_KEY = "traffic-dodge:achievements";
