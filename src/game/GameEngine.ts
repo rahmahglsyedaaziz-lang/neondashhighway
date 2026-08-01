@@ -408,6 +408,7 @@ export class GameEngine {
       if (this.nearMissEventTimer <= 0) this.nearMissEvent = null;
     }
     if (this.policeEscapedFlash > 0) this.policeEscapedFlash = Math.max(0, this.policeEscapedFlash - dt);
+    if (this.pursuitStartFlash > 0) this.pursuitStartFlash = Math.max(0, this.pursuitStartFlash - dt);
     this.checkAchievements();
     this.pushHud();
   }
