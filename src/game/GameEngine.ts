@@ -314,6 +314,9 @@ export class GameEngine {
     // ~10 canvas units per meter keeps distances in a believable range.
     this.distanceM += (worldSpeed * dt) / 10;
     this.updatePolice(dt);
+    this.updatePatrols(dt, profile.speed, slowFactor * boostFactor);
+    this.updateExits(dt, worldSpeed);
+    if (this.phase !== "playing") return;
 
     this.boostMs = Math.max(0, this.boostMs - dt * 1000);
     this.slowMs = Math.max(0, this.slowMs - dt * 1000);
