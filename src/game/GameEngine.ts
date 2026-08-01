@@ -478,13 +478,16 @@ export class GameEngine {
   private updatePolice(dt: number) {
     if (!this.policeActive) {
       this.policeCooldown -= dt;
-      // Random pursuits keep every run different, but only once the player is rolling.
-      if (this.policeCooldown <= 0 && this.distanceM > 700 && Math.random() < dt * 0.08) {
+      // Spontaneous pursuits: a balanced random roll once the cooldown expires,
+      // so chases feel unpredictable but show up regularly in a normal run.
+      if (this.policeCooldown <= 0 && this.distanceM > 350 && Math.random() < dt * 0.22) {
         this.startPursuit();
       }
       return;
     }
 
+    // Fallback: if the player never finds an off-ramp, the police eventually
+    // break off — a pursuit is never an inescapable death sentence.
     this.policeRemaining -= dt;
     this.sirenTimer -= dt;
     if (this.sirenTimer <= 0) {
@@ -507,13 +510,106 @@ export class GameEngine {
       unit.y += (ty - unit.y) * Math.min(1, dt * 2.2);
     }
 
-    if (this.policeRemaining <= 0) this.endPursuit();
+    if (this.policeRemaining <= 0) this.endPursuit(false);
+  }
+
+  /* ---------- patrol cruisers in traffic ---------- */
+
+  private updatePatrols(dt: number, baseSpeed: number, factor: number) {
+    this.patrolCooldown -= dt;
+    if (this.patrolCooldown <= 0 && this.patrols.length < 2) {
+      this.patrolCooldown = 12 + Math.random() * 16;
+      const lane = Math.floor(Math.random() * this.lanes);
+      this.patrols.push({
+        active: true,
+        lane,
+        w: this.player.w,
+        h: this.player.h,
+        x: this.laneX(lane) - this.player.w / 2,
+        y: -this.player.h * 2,
+        speed: baseSpeed * 0.92,
+        rollTimer: 1.6,
+        escalated: false,
+      });
+    }
+
+    for (const p of this.patrols) {
+      if (!p.active) continue;
+      p.y += p.speed * factor * dt;
+      p.x += (this.laneX(p.lane) - p.w / 2 - p.x) * Math.min(1, dt * 4);
+
+      if (collides(this.player, p)) {
+        this.crash();
+        return;
+      }
+
+      // A patrol only sometimes escalates: it rolls a few times while on screen.
+      if (!p.escalated && !this.policeActive && p.y > 0 && p.y < this.height) {
+        p.rollTimer -= dt;
+        if (p.rollTimer <= 0) {
+          p.rollTimer = 1.6;
+          if (Math.random() < 0.22) {
+            p.escalated = true;
+            this.startPursuit();
+          }
+        }
+      }
+
+      if (p.y > this.height + p.h) p.active = false;
+    }
+    this.patrols = this.patrols.filter((p) => p.active);
+  }
+
+  /* ---------- highway exits ---------- */
+
+  private updateExits(dt: number, worldSpeed: number) {
+    this.exitCooldown -= dt;
+    if (this.exitCooldown <= 0 && this.exits.length === 0) {
+      // Exits come around more often during a chase, but never instantly, and
+      // they also show up in normal driving so they stay unpredictable.
+      this.exitCooldown = this.policeActive ? 9 + Math.random() * 9 : 22 + Math.random() * 20;
+      const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+      this.exits.push({
+        active: true,
+        y: -this.height * 0.34,
+        h: this.height * 0.32,
+        lane: side === "left" ? 0 : this.lanes - 1,
+        side,
+        taken: false,
+      });
+    }
+
+    for (const e of this.exits) {
+      if (!e.active) continue;
+      e.y += worldSpeed * dt;
+      const overlap = e.y < this.player.y + this.player.h && e.y + e.h > this.player.y;
+      if (!e.taken && overlap && this.playerLane === e.lane && this.targetLane === e.lane) {
+        e.taken = true;
+        this.takeExit();
+      }
+      if (e.y > this.height + e.h) e.active = false;
+    }
+    this.exits = this.exits.filter((e) => e.active);
+  }
+
+  private takeExit() {
+    if (this.policeActive) {
+      this.endPursuit(true);
+    } else {
+      this.score += 250;
+      this.sound.powerup();
+      this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 16, "#7dfcd6");
+    }
   }
 
   private startPursuit() {
     this.policeActive = true;
-    this.policeRemaining = 30;
+    // Give-up timer: long enough to be tense, short enough to stay fair.
+    this.policeRemaining = 40;
     this.sirenTimer = 0;
+    this.pursuitStartFlash = 2.4;
+    // A chase should get its first escape chance soon, but not immediately.
+    this.exitCooldown = Math.min(this.exitCooldown, 6 + Math.random() * 6);
     this.police = [0, 1].map((i) => ({
       lane: this.targetLane,
       targetLane: this.targetLane,
@@ -526,12 +622,13 @@ export class GameEngine {
     this.sound.policeStart();
   }
 
-  private endPursuit() {
+  private endPursuit(viaExit: boolean) {
     this.policeActive = false;
     this.police.length = 0;
     this.policeEscapes += 1;
     this.policeEscapedFlash = 3;
-    this.score += 1500;
+    this.score += viaExit ? 1500 : 900;
+    this.policeCooldown = 22 + Math.random() * 26;
     this.sound.escaped();
     this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 30, "#00ff9d");
   }
