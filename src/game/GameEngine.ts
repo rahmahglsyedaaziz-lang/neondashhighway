@@ -227,14 +227,32 @@ export class GameEngine {
     this.pushHud();
   }
 
-  setMode(mode: RoadMode) {
-    if (this.mode === mode) return;
-    this.mode = mode;
-    this.lanes = MODE_LANES[mode];
-    this.playerLane = Math.min(this.playerLane, this.lanes - 1);
-    this.targetLane = Math.min(this.targetLane, this.lanes - 1);
+  /** Infinity run: choose the traffic configuration on the same 4-lane highway. */
+  setTrafficMode(mode: TrafficMode) {
+    this.trafficMode = mode;
+    this.playerLane = Math.max(this.minPlayerLane, Math.min(this.playerLane, this.lanes - 1));
+    this.targetLane = Math.max(this.minPlayerLane, Math.min(this.targetLane, this.lanes - 1));
     this.resize();
   }
+
+  /** Start an endless run. */
+  setInfinity(traffic: TrafficMode) {
+    this.gameMode = "infinity";
+    this.careerLevel = 0;
+    this.careerTargetM = 0;
+    this.difficulty.setOffset(0);
+    this.setTrafficMode(traffic);
+  }
+
+  /** Configure a career level run (distance goal + starting difficulty). */
+  setCareer(level: number, targetM: number, difficultyOffset: number, traffic: TrafficMode) {
+    this.gameMode = "career";
+    this.careerLevel = level;
+    this.careerTargetM = targetM;
+    this.difficulty.setOffset(difficultyOffset);
+    this.setTrafficMode(traffic);
+  }
+
 
   start() {
     this.sound.unlock();
