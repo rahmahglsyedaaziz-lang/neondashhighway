@@ -284,7 +284,8 @@ export class GameEngine {
     this.exits.length = 0;
     this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
-    const startLane = Math.min(1, this.lanes - 1);
+    this.careerComplete = false;
+    const startLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 2, this.lanes - 1));
     this.playerLane = startLane;
     this.targetLane = startLane;
     this.tilt = 0;
@@ -373,6 +374,8 @@ export class GameEngine {
 
     this.spawner.update(dt, {
       laneCount: this.lanes,
+      playerLanes: this.playerLanes,
+      oncomingLanes: this.oncomingLanes,
       laneX: (l) => this.laneX(l),
       carW: this.player.w,
       carH: this.player.h,
