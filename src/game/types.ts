@@ -119,5 +119,10 @@ export interface HudState {
   policeRemaining: number;
   policeEscapedFlash: boolean;
   policeEscapes: number;
-
+  /** True right after a pursuit begins (banner flash). */
+  pursuitStartFlash: boolean;
+  /** An off-ramp is on screen and reachable. */
+  exitAvailable: boolean;
+  /** Which side the on-screen exit is on. */
+  exitSide: "left" | "right" | null;
 }
