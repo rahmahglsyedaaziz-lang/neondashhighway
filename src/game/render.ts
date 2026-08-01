@@ -78,6 +78,8 @@ export function drawRoad(
   scroll: number,
   neon: string,
   boosting: boolean,
+  /** Lane boundary index that separates opposing traffic (two-way), or null. */
+  dividerIndex: number | null = null,
 ) {
   const laneW = roadW / laneCount;
   const dash = h * 0.11;
@@ -91,6 +93,7 @@ export function drawRoad(
   ctx.lineCap = "round";
 
   for (let i = 1; i < laneCount; i++) {
+    if (i === dividerIndex) continue;
     const x = roadX + laneW * i;
     let y = (scroll % (dash + gap)) - (dash + gap);
     while (y < h) {
@@ -110,6 +113,22 @@ export function drawRoad(
   ctx.moveTo(roadX + roadW, 0);
   ctx.lineTo(roadX + roadW, h);
   ctx.stroke();
+
+  // Solid double centre line: makes the two traffic directions unmistakable.
+  if (dividerIndex !== null) {
+    const cx = roadX + laneW * dividerIndex;
+    const off = Math.max(2.5, roadW * 0.008);
+    ctx.strokeStyle = "#ffd400";
+    ctx.shadowColor = "#ffd400";
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = Math.max(2.5, roadW * 0.007);
+    ctx.beginPath();
+    ctx.moveTo(cx - off, 0);
+    ctx.lineTo(cx - off, h);
+    ctx.moveTo(cx + off, 0);
+    ctx.lineTo(cx + off, h);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -130,10 +149,12 @@ export function drawCar(
   accent: string,
   style: number,
   opts: { tilt?: number; headlights?: boolean; glow?: string } = {},
+  opts: { tilt?: number; headlights?: boolean; glow?: string; flip?: boolean } = {},
 ) {
   const { x, y, w, h } = r;
   ctx.save();
   ctx.translate(x + w / 2, y + h / 2);
+  if (opts.flip) ctx.rotate(Math.PI);
   if (opts.tilt) ctx.rotate(opts.tilt);
   ctx.translate(-w / 2, -h / 2);
 

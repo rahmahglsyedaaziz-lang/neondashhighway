@@ -23,14 +23,21 @@ const METERS_PER_LEVEL = 420;
 export class DifficultyManager {
   /** Continuous progress (fractional levels) so speed ramps smoothly. */
   private progress = 0;
+  /** Career levels start part-way up the curve. */
+  private offset = 0;
 
   reset() {
-    this.progress = 0;
+    this.progress = this.offset;
+  }
+
+  /** Extra difficulty applied from the first meter (career mode). */
+  setOffset(offset: number) {
+    this.offset = Math.max(0, offset);
   }
 
   /** @param distanceM meters travelled in the current run. */
   update(distanceM: number) {
-    this.progress = Math.min(MAX_LEVEL, distanceM / METERS_PER_LEVEL);
+    this.progress = Math.min(MAX_LEVEL, this.offset + distanceM / METERS_PER_LEVEL);
     return this.currentLevel;
   }
 
