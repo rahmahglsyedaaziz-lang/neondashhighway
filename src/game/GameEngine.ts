@@ -797,7 +797,17 @@ export class GameEngine {
     }
     drawBackdrop(ctx, this.width, this.height, this.roadX, this.roadW, sky);
     const neon = this.timeOfDay === "night" ? "#00e5ff" : this.timeOfDay === "sunset" ? "#ff2d6f" : "#7dfcd6";
-    drawRoad(ctx, this.height, this.roadX, this.roadW, this.mode === "single" ? 1 : this.lanes, this.scroll, neon, this.boostMs > 0);
+    drawRoad(
+      ctx,
+      this.height,
+      this.roadX,
+      this.roadW,
+      this.lanes,
+      this.scroll,
+      neon,
+      this.boostMs > 0,
+      this.trafficMode === "twoway" ? this.lanes / 2 : null,
+    );
     drawSpeedLines(ctx, this.width, this.height, this.time, this.boostMs > 0 ? 0.6 : this.difficulty.currentLevel / 20);
 
     for (const e of this.exits) {
@@ -808,7 +818,11 @@ export class GameEngine {
 
     for (const car of this.spawner.cars) {
       if (!car.active) continue;
-      drawCar(ctx, car, car.color, car.accent, car.style, { headlights: false });
+      // Oncoming cars face the player: flipped body with headlights on.
+      drawCar(ctx, car, car.color, car.accent, car.style, {
+        headlights: car.oncoming,
+        flip: car.oncoming,
+      });
     }
 
     for (const p of this.patrols) {
@@ -868,6 +882,11 @@ export class GameEngine {
 
   private pushHud() {
     this.onHud({
+      gameMode: this.gameMode,
+      trafficMode: this.trafficMode,
+      careerLevel: this.careerLevel,
+      careerTargetM: this.careerTargetM,
+      careerComplete: this.careerComplete,
       phase: this.phase,
       score: Math.round(this.displayScore),
       highScore: this.highScore,
