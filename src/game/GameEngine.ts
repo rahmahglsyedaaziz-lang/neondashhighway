@@ -714,12 +714,29 @@ export class GameEngine {
     drawRoad(ctx, this.height, this.roadX, this.roadW, this.mode === "single" ? 1 : this.lanes, this.scroll, neon, this.boostMs > 0);
     drawSpeedLines(ctx, this.width, this.height, this.time, this.boostMs > 0 ? 0.6 : this.difficulty.currentLevel / 20);
 
+    for (const e of this.exits) {
+      if (e.active) drawExit(ctx, e, this.roadX, this.roadW, this.time, this.policeActive);
+    }
+
     for (const p of this.spawner.pickups) if (p.active) drawPickup(ctx, p);
 
     for (const car of this.spawner.cars) {
       if (!car.active) continue;
       drawCar(ctx, car, car.color, car.accent, car.style, { headlights: false });
     }
+
+    for (const p of this.patrols) {
+      if (!p.active) continue;
+      const flash = Math.floor(this.time * 6) % 2 === 0;
+      drawCar(ctx, p, "#0f1a3a", "#e8ecff", 0, { glow: flash ? "#2f6bff" : "#ff2d4f" });
+      ctx.save();
+      ctx.fillStyle = flash ? "#2f6bff" : "#ff2d4f";
+      ctx.shadowColor = ctx.fillStyle as string;
+      ctx.shadowBlur = 16;
+      ctx.fillRect(p.x + p.w * 0.18, p.y + p.h * 0.12, p.w * 0.64, p.h * 0.07);
+      ctx.restore();
+    }
+
 
     for (const unit of this.police) {
       const flash = Math.floor(this.time * 8) % 2 === 0;
