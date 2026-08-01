@@ -1,4 +1,39 @@
-import type { Particle, Pickup, Rect } from "./types";
+import type { HighwayExit, Particle, Pickup, Rect } from "./types";
+
+/** Neon off-ramp painted on the shoulder; taking it during a chase = escape. */
+export function drawExit(
+  ctx: CanvasRenderingContext2D,
+  e: HighwayExit,
+  roadX: number,
+  roadW: number,
+  time: number,
+  urgent: boolean,
+) {
+  const w = Math.max(26, roadW * 0.16);
+  const x = e.side === "left" ? roadX - w * 0.85 : roadX + roadW - w * 0.15;
+  const color = urgent ? "#00ff9d" : "#7dfcd6";
+  const pulse = 0.55 + 0.45 * ((Math.sin(time * 5) + 1) / 2);
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20 * pulse;
+  ctx.globalAlpha = 0.18 * pulse + 0.12;
+  ctx.fillRect(x, e.y, w, e.h);
+  ctx.globalAlpha = 0.95;
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = color;
+  ctx.strokeRect(x, e.y, w, e.h);
+
+  ctx.translate(x + w / 2, e.y + e.h / 2);
+  ctx.rotate(e.side === "left" ? -Math.PI / 2 : Math.PI / 2);
+  ctx.fillStyle = color;
+  ctx.font = `bold ${Math.round(w * 0.42)}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("EXIT ▲", 0, 0);
+  ctx.restore();
+}
 
 export interface Sky {
   top: string;
