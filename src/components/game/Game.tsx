@@ -6,6 +6,8 @@ import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
 import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
 import { submitRun } from "@/lib/game.functions";
+import { completeCareerLevel } from "@/lib/career.functions";
+import { addLocalCareer, getCareerLevel } from "@/game/career";
 import {
   DEFAULT_CAR_SLUG,
   getLocalCarSlug,
