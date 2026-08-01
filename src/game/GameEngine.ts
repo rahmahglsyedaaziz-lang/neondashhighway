@@ -238,6 +238,11 @@ export class GameEngine {
     this.policeEscapes = 0;
     this.policeEscapedFlash = 0;
     this.sirenTimer = 0;
+    this.pursuitStartFlash = 0;
+    this.patrols.length = 0;
+    this.patrolCooldown = 8 + Math.random() * 10;
+    this.exits.length = 0;
+    this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
     const startLane = Math.min(1, this.lanes - 1);
     this.playerLane = startLane;
