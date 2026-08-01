@@ -148,7 +148,6 @@ export function drawCar(
   color: string,
   accent: string,
   style: number,
-  opts: { tilt?: number; headlights?: boolean; glow?: string } = {},
   opts: { tilt?: number; headlights?: boolean; glow?: string; flip?: boolean } = {},
 ) {
   const { x, y, w, h } = r;
