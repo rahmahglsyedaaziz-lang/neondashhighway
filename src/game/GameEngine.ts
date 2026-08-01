@@ -61,7 +61,11 @@ export class GameEngine {
   private height = 0;
   private roadX = 0;
   private roadW = 0;
-  private mode: RoadMode = "classic";
+  private trafficMode: TrafficMode = "oneway";
+  private gameMode: GameMode = "infinity";
+  private careerLevel = 0;
+  private careerTargetM = 0;
+  private careerComplete = false;
   private lanes = LANES;
 
   private difficulty = new DifficultyManager();
