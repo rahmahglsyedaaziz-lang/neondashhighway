@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { GameEngine } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
@@ -6,6 +7,8 @@ import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
 import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
 import { submitRun } from "@/lib/game.functions";
+import { completeCareerLevel } from "@/lib/career.functions";
+import { addLocalCareer, getCareerLevel } from "@/game/career";
 import {
   DEFAULT_CAR_SLUG,
   getLocalCarSlug,
@@ -41,6 +44,11 @@ const INITIAL: HudState = {
   pursuitStartFlash: false,
   exitAvailable: false,
   exitSide: null,
+  gameMode: "infinity",
+  trafficMode: "oneway",
+  careerLevel: 0,
+  careerTargetM: 0,
+  careerComplete: false,
 };
 
 export function Game() {
@@ -51,6 +59,8 @@ export function Game() {
   const { data: cars } = useCars();
   const { data: profile } = useProfile(user?.id);
   const send = useServerFn(submitRun);
+  const sendCareer = useServerFn(completeCareerLevel);
+  const queryClient = useQueryClient();
   const carSlugRef = useRef(DEFAULT_CAR_SLUG);
   const signedInRef = useRef(false);
   signedInRef.current = !!user;
@@ -82,6 +92,20 @@ export function Game() {
         /* score sync failed — local best still shown */
       });
     };
+    engine.onCareerComplete = (level, score) => {
+      // Guests keep progress locally; signed-in players also earn car rewards.
+      addLocalCareer(level);
+      if (!signedInRef.current) return;
+      void sendCareer({ data: { level, score } })
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: ["career"] });
+          void queryClient.invalidateQueries({ queryKey: ["unlocks"] });
+        })
+        .catch(() => {
+          /* career sync failed — local progress still applies */
+        });
+    };
+
 
 
     const onResize = () => engine.resize();
@@ -152,9 +176,16 @@ export function Game() {
       <PauseOverlay hud={hud} onResume={() => engineRef.current?.togglePause()} />
       <StartMenu
         hud={hud}
-        onStart={(mode) => {
-          engineRef.current?.setMode(mode);
-          engineRef.current?.start();
+        onStart={(req) => {
+          const engine = engineRef.current;
+          if (!engine) return;
+          if (req.kind === "career") {
+            const lvl = getCareerLevel(req.level);
+            engine.setCareer(lvl.level, lvl.targetM, lvl.difficultyOffset, lvl.traffic);
+          } else {
+            engine.setInfinity(req.traffic);
+          }
+          engine.start();
         }}
       />
       <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />

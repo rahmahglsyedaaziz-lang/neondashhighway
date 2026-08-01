@@ -25,7 +25,16 @@ export function GameOverModal({ hud, onRestart }: Props) {
   return (
     <div className="animate-fade-in absolute inset-0 z-30 flex items-center justify-center bg-background/80 px-4 backdrop-blur-md">
       <div className="animate-pop panel max-h-[92%] w-full max-w-sm overflow-y-auto text-center">
-        <h2 className="text-glow-destructive text-3xl font-black tracking-tight">CRASHED</h2>
+        {hud.careerComplete ? (
+          <>
+            <h2 className="text-glow-accent text-3xl font-black tracking-tight">LEVEL COMPLETE</h2>
+            <p className="mt-1 text-sm font-semibold text-accent">
+              Career Level {hud.careerLevel} cleared — next level unlocked
+            </p>
+          </>
+        ) : (
+          <h2 className="text-glow-destructive text-3xl font-black tracking-tight">CRASHED</h2>
+        )}
         {isRecord && (
           <p className="mt-1 flex items-center justify-center gap-1 text-sm font-semibold text-accent">
             <Trophy className="size-4" /> New personal best

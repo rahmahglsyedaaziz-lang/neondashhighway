@@ -24,10 +24,10 @@ import type {
   RunStats,
 } from "./types";
 
-const LANES = 3;
-export type RoadMode = "single" | "double" | "classic";
-const MODE_LANES: Record<RoadMode, number> = { single: 2, double: 2, classic: LANES };
-const MODE_WIDTH: Record<RoadMode, number> = { single: 0.56, double: 1, classic: 1 };
+const LANES = 4;
+/** Infinity traffic layouts — same highway, different traffic configuration. */
+export type TrafficMode = "oneway" | "twoway";
+export type GameMode = "career" | "infinity";
 const HS_KEY = "traffic-dodge:highscore";
 const DAILY_KEY = "traffic-dodge:daily";
 const ACH_KEY = "traffic-dodge:achievements";
@@ -61,7 +61,11 @@ export class GameEngine {
   private height = 0;
   private roadX = 0;
   private roadW = 0;
-  private mode: RoadMode = "classic";
+  private trafficMode: TrafficMode = "oneway";
+  private gameMode: GameMode = "infinity";
+  private careerLevel = 0;
+  private careerTargetM = 0;
+  private careerComplete = false;
   private lanes = LANES;
 
   private difficulty = new DifficultyManager();
@@ -161,7 +165,7 @@ export class GameEngine {
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.roadW = Math.min(this.width * 0.92, this.height * 0.62, 560) * MODE_WIDTH[this.mode];
+    this.roadW = Math.min(this.width * 0.98, this.height * 0.78, 640);
     this.roadX = (this.width - this.roadW) / 2;
     const laneW = this.roadW / this.lanes;
     this.player.w = laneW * 0.6;
@@ -177,9 +181,27 @@ export class GameEngine {
 
   /* ---------- controls ---------- */
 
+  /** Lowest lane index the player may occupy (two-way keeps them on their side). */
+  private get minPlayerLane() {
+    return this.trafficMode === "twoway" ? this.lanes / 2 : 0;
+  }
+
+  private get playerLanes() {
+    const out: number[] = [];
+    for (let l = this.minPlayerLane; l < this.lanes; l++) out.push(l);
+    return out;
+  }
+
+  private get oncomingLanes() {
+    if (this.trafficMode !== "twoway") return [];
+    const out: number[] = [];
+    for (let l = 0; l < this.lanes / 2; l++) out.push(l);
+    return out;
+  }
+
   move(dir: -1 | 1) {
     if (this.phase !== "playing") return;
-    const next = Math.max(0, Math.min(this.lanes - 1, this.targetLane + dir));
+    const next = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane + dir));
     if (next === this.targetLane) return;
     this.targetLane = next;
     this.sound.laneSwitch();
@@ -205,14 +227,32 @@ export class GameEngine {
     this.pushHud();
   }
 
-  setMode(mode: RoadMode) {
-    if (this.mode === mode) return;
-    this.mode = mode;
-    this.lanes = MODE_LANES[mode];
-    this.playerLane = Math.min(this.playerLane, this.lanes - 1);
-    this.targetLane = Math.min(this.targetLane, this.lanes - 1);
+  /** Infinity run: choose the traffic configuration on the same 4-lane highway. */
+  setTrafficMode(mode: TrafficMode) {
+    this.trafficMode = mode;
+    this.playerLane = Math.max(this.minPlayerLane, Math.min(this.playerLane, this.lanes - 1));
+    this.targetLane = Math.max(this.minPlayerLane, Math.min(this.targetLane, this.lanes - 1));
     this.resize();
   }
+
+  /** Start an endless run. */
+  setInfinity(traffic: TrafficMode) {
+    this.gameMode = "infinity";
+    this.careerLevel = 0;
+    this.careerTargetM = 0;
+    this.difficulty.setOffset(0);
+    this.setTrafficMode(traffic);
+  }
+
+  /** Configure a career level run (distance goal + starting difficulty). */
+  setCareer(level: number, targetM: number, difficultyOffset: number, traffic: TrafficMode) {
+    this.gameMode = "career";
+    this.careerLevel = level;
+    this.careerTargetM = targetM;
+    this.difficulty.setOffset(difficultyOffset);
+    this.setTrafficMode(traffic);
+  }
+
 
   start() {
     this.sound.unlock();
@@ -244,7 +284,8 @@ export class GameEngine {
     this.exits.length = 0;
     this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
-    const startLane = Math.min(1, this.lanes - 1);
+    this.careerComplete = false;
+    const startLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 2, this.lanes - 1));
     this.playerLane = startLane;
     this.targetLane = startLane;
     this.tilt = 0;
@@ -333,6 +374,8 @@ export class GameEngine {
 
     this.spawner.update(dt, {
       laneCount: this.lanes,
+      playerLanes: this.playerLanes,
+      oncomingLanes: this.oncomingLanes,
       laneX: (l) => this.laneX(l),
       carW: this.player.w,
       carH: this.player.h,
@@ -399,6 +442,10 @@ export class GameEngine {
     if (this.comboTimer <= 0 && this.combo > 0) this.combo = 0;
 
     this.difficulty.update(this.distanceM);
+    if (this.gameMode === "career" && this.distanceM >= this.careerTargetM) {
+      this.finishCareerLevel();
+      return;
+    }
     this.displayScore += (this.score - this.displayScore) * Math.min(1, dt * 9);
     if (Math.abs(this.score - this.displayScore) < 0.5) this.displayScore = this.score;
     this.shake *= 0.88;
@@ -451,6 +498,41 @@ export class GameEngine {
   }
 
 
+  /** Career level cleared: ends the run as a win, not a crash. */
+  private finishCareerLevel() {
+    this.careerComplete = true;
+    this.phase = "gameover";
+    this.policeActive = false;
+    this.police.length = 0;
+    this.score += 500;
+    this.sound.escaped();
+    this.sound.stopMusic();
+    this.sound.stopEngine();
+    this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 40, "#00ff9d");
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      window.localStorage.setItem(HS_KEY, String(this.score));
+    }
+    if (this.score > this.dailyBest) {
+      this.dailyBest = this.score;
+      window.localStorage.setItem(DAILY_KEY, JSON.stringify({ date: todayKey(), score: this.score }));
+    }
+    this.displayScore = this.score;
+    this.pushHud();
+    this.onRunEnd({
+      score: this.score,
+      coins: this.coins,
+      durationMs: Math.max(0, Math.round(performance.now() - this.runStart)),
+      nearMisses: this.nearMisses,
+      bestCombo: this.bestCombo,
+      distanceM: Math.round(this.distanceM),
+      policeEscapes: this.policeEscapes,
+    });
+    this.onCareerComplete(this.careerLevel, this.score);
+  }
+
+  onCareerComplete: (level: number, score: number) => void = () => {};
+
   /* ---------- near miss ---------- */
 
   /** @param intensity 0..1, 1 = paint-scraping close. */
@@ -501,8 +583,9 @@ export class GameEngine {
       unit.laneTimer -= dt;
       if (unit.laneTimer <= 0) {
         unit.laneTimer = 0.5 + Math.random() * 0.7;
-        const drift = Math.random() < 0.65 ? this.targetLane : Math.floor(Math.random() * this.lanes);
-        unit.targetLane = Math.max(0, Math.min(this.lanes - 1, drift));
+        const lanes = this.playerLanes;
+        const drift = Math.random() < 0.65 ? this.targetLane : lanes[Math.floor(Math.random() * lanes.length)];
+        unit.targetLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, drift));
       }
       const tx = this.laneX(unit.targetLane) - unit.w / 2;
       unit.x += (tx - unit.x) * Math.min(1, dt * 5);
@@ -519,7 +602,8 @@ export class GameEngine {
     this.patrolCooldown -= dt;
     if (this.patrolCooldown <= 0 && this.patrols.length < 2) {
       this.patrolCooldown = 12 + Math.random() * 16;
-      const lane = Math.floor(Math.random() * this.lanes);
+      const lanes = this.playerLanes;
+      const lane = lanes[Math.floor(Math.random() * lanes.length)];
       this.patrols.push({
         active: true,
         lane,
@@ -568,12 +652,14 @@ export class GameEngine {
       // Exits come around more often during a chase, but never instantly, and
       // they also show up in normal driving so they stay unpredictable.
       this.exitCooldown = this.policeActive ? 9 + Math.random() * 9 : 22 + Math.random() * 20;
-      const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+      // In two-way traffic the shoulder is only on the player's own side.
+      const side: "left" | "right" =
+        this.trafficMode === "twoway" ? "right" : Math.random() < 0.5 ? "left" : "right";
       this.exits.push({
         active: true,
         y: -this.height * 0.34,
         h: this.height * 0.32,
-        lane: side === "left" ? 0 : this.lanes - 1,
+        lane: side === "left" ? this.minPlayerLane : this.lanes - 1,
         side,
         taken: false,
       });
@@ -711,7 +797,17 @@ export class GameEngine {
     }
     drawBackdrop(ctx, this.width, this.height, this.roadX, this.roadW, sky);
     const neon = this.timeOfDay === "night" ? "#00e5ff" : this.timeOfDay === "sunset" ? "#ff2d6f" : "#7dfcd6";
-    drawRoad(ctx, this.height, this.roadX, this.roadW, this.mode === "single" ? 1 : this.lanes, this.scroll, neon, this.boostMs > 0);
+    drawRoad(
+      ctx,
+      this.height,
+      this.roadX,
+      this.roadW,
+      this.lanes,
+      this.scroll,
+      neon,
+      this.boostMs > 0,
+      this.trafficMode === "twoway" ? this.lanes / 2 : null,
+    );
     drawSpeedLines(ctx, this.width, this.height, this.time, this.boostMs > 0 ? 0.6 : this.difficulty.currentLevel / 20);
 
     for (const e of this.exits) {
@@ -722,7 +818,11 @@ export class GameEngine {
 
     for (const car of this.spawner.cars) {
       if (!car.active) continue;
-      drawCar(ctx, car, car.color, car.accent, car.style, { headlights: false });
+      // Oncoming cars face the player: flipped body with headlights on.
+      drawCar(ctx, car, car.color, car.accent, car.style, {
+        headlights: car.oncoming,
+        flip: car.oncoming,
+      });
     }
 
     for (const p of this.patrols) {
@@ -782,6 +882,11 @@ export class GameEngine {
 
   private pushHud() {
     this.onHud({
+      gameMode: this.gameMode,
+      trafficMode: this.trafficMode,
+      careerLevel: this.careerLevel,
+      careerTargetM: this.careerTargetM,
+      careerComplete: this.careerComplete,
       phase: this.phase,
       score: Math.round(this.displayScore),
       highScore: this.highScore,

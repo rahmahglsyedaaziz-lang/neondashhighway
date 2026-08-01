@@ -13,6 +13,10 @@ const PALETTE: Array<[string, string]> = [
 
 export interface SpawnContext {
   laneCount: number;
+  /** Lanes the player drives in — waves always leave one of these open. */
+  playerLanes: number[];
+  /** Lanes carrying traffic that drives toward the player (two-way only). */
+  oncomingLanes: number[];
   laneX: (lane: number) => number;
   carW: number;
   carH: number;
@@ -22,13 +26,15 @@ export interface SpawnContext {
 
 /**
  * Fairness-first traffic generation.
- * Rules enforced: never fills every lane, keeps the open lane reachable from the
- * previous open lane, keeps vertical spacing per lane, and never overlaps cars.
+ * Rules enforced: never fills every player lane, keeps the open lane reachable
+ * from the previous open lane, keeps vertical spacing per lane, and never
+ * overlaps cars. Oncoming lanes are populated separately.
  */
 export class TrafficSpawner {
   private pool: TrafficCar[] = [];
   private pickupPool: Pickup[] = [];
   private timer = 0;
+  private oncomingTimer = 0;
   private lastOpenLane = 1;
   private lastPattern = "";
 
@@ -36,6 +42,7 @@ export class TrafficSpawner {
     this.pool.forEach((c) => (c.active = false));
     this.pickupPool.forEach((p) => (p.active = false));
     this.timer = 0;
+    this.oncomingTimer = 0;
     this.lastOpenLane = 1;
     this.lastPattern = "";
   }
@@ -65,6 +72,7 @@ export class TrafficSpawner {
       scored: false,
       nearMissed: false,
       kind: "car",
+      oncoming: false,
     };
     this.pool.push(car);
     return car;
@@ -89,26 +97,59 @@ export class TrafficSpawner {
 
   update(dt: number, ctx: SpawnContext) {
     this.timer += dt * 1000;
-    if (this.timer < ctx.profile.spawnInterval) return;
-    this.timer = 0;
-    this.spawnWave(ctx);
+    if (this.timer >= ctx.profile.spawnInterval) {
+      this.timer = 0;
+      this.spawnWave(ctx);
+    }
+
+    if (ctx.oncomingLanes.length) {
+      this.oncomingTimer += dt * 1000;
+      // Oncoming traffic is sparser: it closes distance much faster.
+      if (this.oncomingTimer >= ctx.profile.spawnInterval * 1.15) {
+        this.oncomingTimer = 0;
+        this.spawnOncoming(ctx);
+      }
+    }
+  }
+
+  private spawnOncoming(ctx: SpawnContext) {
+    const lane = ctx.oncomingLanes[Math.floor(Math.random() * ctx.oncomingLanes.length)];
+    const minGap = ctx.carH * 2.6;
+    const top = this.highestInLane(lane);
+    if (top && top.y > -minGap) return;
+    const car = this.obtain();
+    const isTruck = Math.random() < ctx.profile.truckChance;
+    const [color, accent] = isTruck
+      ? (["#8ea0b5", "#e6eef7"] as [string, string])
+      : PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    car.active = true;
+    car.oncoming = true;
+    car.kind = isTruck ? "truck" : "car";
+    car.lane = lane;
+    car.w = ctx.carW * (isTruck ? 1.02 : 1);
+    car.h = ctx.carH * (isTruck ? 1.5 : 1);
+    car.x = ctx.laneX(lane) - car.w / 2;
+    car.y = -car.h - Math.random() * ctx.carH;
+    car.speed = ctx.profile.speed * (isTruck ? 1.45 : 1.7);
+    car.color = color;
+    car.accent = accent;
+    car.style = isTruck ? 1 : Math.floor(Math.random() * 3);
+    car.scored = false;
+    car.nearMissed = false;
   }
 
   private spawnWave(ctx: SpawnContext) {
-    const { laneCount, profile } = ctx;
-    // Always keep at least one lane open, and keep it reachable (adjacent to the
-    // last open lane) so the player can always thread the gap in time.
-    const reachable: number[] = [];
-    for (let l = 0; l < laneCount; l++) {
-      if (Math.abs(l - this.lastOpenLane) <= 1) reachable.push(l);
-    }
-    const openLane = reachable[Math.floor(Math.random() * reachable.length)];
+    const { profile, playerLanes } = ctx;
+    // Always keep at least one player lane open, and keep it reachable
+    // (adjacent to the last open lane) so the gap can always be threaded.
+    const reachable = playerLanes.filter((l) => Math.abs(l - this.lastOpenLane) <= 1);
+    const pickFrom = reachable.length ? reachable : playerLanes;
+    const openLane = pickFrom[Math.floor(Math.random() * pickFrom.length)];
 
-    const candidates: number[] = [];
-    for (let l = 0; l < laneCount; l++) if (l !== openLane) candidates.push(l);
+    const candidates = playerLanes.filter((l) => l !== openLane);
     shuffle(candidates);
 
-    const desired = Math.min(profile.maxCarsPerWave, laneCount - 1);
+    const desired = Math.min(profile.maxCarsPerWave, Math.max(1, playerLanes.length - 1));
     let count = 1 + (Math.random() < 0.35 + profile.randomness * 0.4 ? desired - 1 : 0);
     count = Math.max(1, Math.min(count, candidates.length));
 
@@ -132,6 +173,7 @@ export class TrafficSpawner {
         ? (["#8ea0b5", "#e6eef7"] as [string, string])
         : PALETTE[Math.floor(Math.random() * PALETTE.length)];
       car.active = true;
+      car.oncoming = false;
       car.kind = isTruck ? "truck" : "car";
       car.lane = lane;
       car.w = ctx.carW * (isTruck ? 1.02 : 1);

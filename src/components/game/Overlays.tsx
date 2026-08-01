@@ -3,56 +3,117 @@ import { Play } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { DailyRewardCard } from "@/components/game/DailyRewardCard";
-import type { RoadMode } from "@/game/GameEngine";
+import { CareerScreen } from "@/components/game/CareerScreen";
+import type { TrafficMode } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 
-const MODES: Array<{ id: RoadMode; icon: string; title: string; tagline: string }> = [
-  { id: "single", icon: "🏎️", title: "SINGLE LANE", tagline: "One lane. No mistakes." },
-  { id: "double", icon: "🏎️🏎️", title: "DOUBLE LANE", tagline: "Two lanes. More room to dodge." },
+export type StartRequest =
+  | { kind: "infinity"; traffic: TrafficMode }
+  | { kind: "career"; level: number };
+
+const TRAFFIC: Array<{ id: TrafficMode; icon: string; title: string; tagline: string }> = [
+  {
+    id: "oneway",
+    icon: "🛣️",
+    title: "ONE-WAY TRAFFIC",
+    tagline: "4 lanes — all traffic flows your way.",
+  },
+  {
+    id: "twoway",
+    icon: "🔄",
+    title: "TWO-WAY TRAFFIC",
+    tagline: "4 lanes — 2 yours, 2 head-on.",
+  },
 ];
 
-function RoadModeDialog({
-  onPick,
+function Dialog({
+  title,
   onClose,
+  children,
 }: {
-  onPick: (mode: RoadMode) => void;
+  title: string;
   onClose: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <div
-      className="animate-fade-in absolute inset-0 z-40 flex items-center justify-center bg-background/85 px-4 backdrop-blur-md"
+      className="animate-fade-in absolute inset-0 z-40 flex items-center justify-center bg-background/85 px-4 py-6 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
-      aria-label="Choose your road"
+      aria-label={title}
       onClick={onClose}
     >
-      <div className="panel w-full max-w-sm text-center" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-glow-primary text-2xl font-black tracking-tight">CHOOSE YOUR ROAD</h2>
-        <div className="mt-4 grid gap-3">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => onPick(m.id)}
-              className="rounded-xl border border-border bg-muted/20 p-3 text-left transition hover:border-primary hover:bg-primary/10"
-            >
-              <span className="text-lg">{m.icon}</span>
-              <span className="mt-1 block text-sm font-black tracking-tight">{m.title}</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">{m.tagline}</span>
-            </button>
-          ))}
-        </div>
+      <div
+        className="panel max-h-full w-full max-w-md overflow-y-auto text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-glow-primary text-2xl font-black tracking-tight">{title}</h2>
+        {children}
       </div>
     </div>
   );
 }
 
-export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (mode: RoadMode) => void }) {
-  const [picking, setPicking] = useState(false);
+export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (req: StartRequest) => void }) {
+  const [step, setStep] = useState<null | "mode" | "career" | "traffic">(null);
   if (hud.phase !== "menu") return null;
+
   return (
     <div className="animate-fade-in absolute inset-0 z-30 flex items-center justify-center bg-background/70 px-4 backdrop-blur-md">
-      {picking && <RoadModeDialog onPick={onStart} onClose={() => setPicking(false)} />}
+      {step === "mode" && (
+        <Dialog title="CHOOSE GAME MODE" onClose={() => setStep(null)}>
+          <div className="mt-4 grid gap-3">
+            <button
+              type="button"
+              onClick={() => setStep("career")}
+              className="rounded-xl border border-border bg-muted/20 p-3 text-left transition hover:border-primary hover:bg-primary/10"
+            >
+              <span className="text-lg">🏆</span>
+              <span className="mt-1 block text-sm font-black tracking-tight">CAREER MODE</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                35 levels. Clear one to unlock the next and earn cars.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep("traffic")}
+              className="rounded-xl border border-border bg-muted/20 p-3 text-left transition hover:border-primary hover:bg-primary/10"
+            >
+              <span className="text-lg">♾️</span>
+              <span className="mt-1 block text-sm font-black tracking-tight">INFINITY MODE</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Endless highway. Pick your traffic type.
+              </span>
+            </button>
+          </div>
+        </Dialog>
+      )}
+
+      {step === "traffic" && (
+        <Dialog title="CHOOSE TRAFFIC" onClose={() => setStep("mode")}>
+          <div className="mt-4 grid gap-3">
+            {TRAFFIC.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onStart({ kind: "infinity", traffic: t.id })}
+                className="rounded-xl border border-border bg-muted/20 p-3 text-left transition hover:border-primary hover:bg-primary/10"
+              >
+                <span className="text-lg">{t.icon}</span>
+                <span className="mt-1 block text-sm font-black tracking-tight">{t.title}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{t.tagline}</span>
+              </button>
+            ))}
+          </div>
+        </Dialog>
+      )}
+
+      {step === "career" && (
+        <Dialog title="CAREER MODE" onClose={() => setStep("mode")}>
+          <CareerScreen onPlay={(level) => onStart({ kind: "career", level })} />
+        </Dialog>
+      )}
+
       <div className="panel w-full max-w-md text-center">
         <p className="hud-label">Endless arcade racer</p>
         <h1 className="text-glow-primary mt-2 text-4xl font-black tracking-tight sm:text-5xl">
@@ -73,7 +134,7 @@ export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (mode: Roa
         </div>
         <DailyRewardCard />
 
-        <button className="btn-neon mt-6 w-full" onClick={() => setPicking(true)}>
+        <button className="btn-neon mt-6 w-full" onClick={() => setStep("mode")}>
           <Play className="size-4" /> PLAY GAME
         </button>
         <div className="mt-3 flex gap-2">

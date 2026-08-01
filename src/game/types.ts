@@ -19,6 +19,8 @@ export interface TrafficCar extends Rect {
   scored: boolean;
   nearMissed: boolean;
   kind: TrafficKind;
+  /** True when the car drives toward the player (two-way traffic). */
+  oncoming: boolean;
 }
 
 export interface PoliceUnit extends Rect {
@@ -125,4 +127,14 @@ export interface HudState {
   exitAvailable: boolean;
   /** Which side the on-screen exit is on. */
   exitSide: "left" | "right" | null;
+  /** Career vs infinity run. */
+  gameMode: "career" | "infinity";
+  /** Traffic layout of the current run. */
+  trafficMode: "oneway" | "twoway";
+  /** Career level being played (0 in infinity mode). */
+  careerLevel: number;
+  /** Meters required to clear the current career level. */
+  careerTargetM: number;
+  /** True when the last run ended by clearing a career level. */
+  careerComplete: boolean;
 }
