@@ -34,7 +34,12 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
           )}
           {hud.policeActive && (
             <div className="animate-pop rounded-full border border-destructive/70 bg-destructive/20 px-3 py-1 text-xs font-black tracking-wider text-destructive">
-              🚨 SURVIVE {hud.policeRemaining}s
+              🚨 PURSUIT — FIND THE EXIT ({hud.policeRemaining}s)
+            </div>
+          )}
+          {hud.exitAvailable && (
+            <div className="animate-pop rounded-full border border-accent/70 bg-accent/15 px-3 py-1 text-xs font-black tracking-wider text-accent">
+              {hud.exitSide === "left" ? "◀ EXIT LEFT" : "EXIT RIGHT ▶"}
             </div>
           )}
         </div>
@@ -76,9 +81,15 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
         </div>
       )}
 
+      {hud.pursuitStartFlash && !hud.policeEscapedFlash && (
+        <div className="animate-pop pointer-events-none absolute inset-x-0 top-1/4 text-center">
+          <span className="text-2xl font-black text-destructive sm:text-3xl">🚨 POLICE PURSUIT STARTED!</span>
+        </div>
+      )}
+
       {hud.policeEscapedFlash && (
         <div className="animate-pop pointer-events-none absolute inset-x-0 top-1/4 text-center">
-          <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED! +1500</span>
+          <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED!</span>
         </div>
       )}
 

@@ -38,6 +38,9 @@ const INITIAL: HudState = {
   policeRemaining: 0,
   policeEscapedFlash: false,
   policeEscapes: 0,
+  pursuitStartFlash: false,
+  exitAvailable: false,
+  exitSide: null,
 };
 
 export function Game() {

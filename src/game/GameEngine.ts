@@ -6,12 +6,23 @@ import {
   SKIES,
   drawBackdrop,
   drawCar,
+  drawExit,
   drawParticles,
   drawPickup,
   drawRoad,
   drawSpeedLines,
 } from "./render";
-import type { GamePhase, HudState, NearMissEvent, Particle, PoliceUnit, Rect, RunStats } from "./types";
+import type {
+  GamePhase,
+  HighwayExit,
+  HudState,
+  NearMissEvent,
+  Particle,
+  PatrolCar,
+  PoliceUnit,
+  Rect,
+  RunStats,
+} from "./types";
 
 const LANES = 3;
 export type RoadMode = "single" | "double" | "classic";
@@ -96,6 +107,15 @@ export class GameEngine {
   private policeEscapes = 0;
   private policeEscapedFlash = 0;
   private sirenTimer = 0;
+  private pursuitStartFlash = 0;
+
+  /* patrol cruisers riding in normal traffic */
+  private patrols: PatrolCar[] = [];
+  private patrolCooldown = 10;
+
+  /* highway exits */
+  private exits: HighwayExit[] = [];
+  private exitCooldown = 25;
   private lastAchievement: string | null = null;
 
   phase: GamePhase = "menu";
@@ -218,6 +238,11 @@ export class GameEngine {
     this.policeEscapes = 0;
     this.policeEscapedFlash = 0;
     this.sirenTimer = 0;
+    this.pursuitStartFlash = 0;
+    this.patrols.length = 0;
+    this.patrolCooldown = 8 + Math.random() * 10;
+    this.exits.length = 0;
+    this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
     const startLane = Math.min(1, this.lanes - 1);
     this.playerLane = startLane;
@@ -289,6 +314,9 @@ export class GameEngine {
     // ~10 canvas units per meter keeps distances in a believable range.
     this.distanceM += (worldSpeed * dt) / 10;
     this.updatePolice(dt);
+    this.updatePatrols(dt, profile.speed, slowFactor * boostFactor);
+    this.updateExits(dt, worldSpeed);
+    if (this.phase !== "playing") return;
 
     this.boostMs = Math.max(0, this.boostMs - dt * 1000);
     this.slowMs = Math.max(0, this.slowMs - dt * 1000);
@@ -380,6 +408,7 @@ export class GameEngine {
       if (this.nearMissEventTimer <= 0) this.nearMissEvent = null;
     }
     if (this.policeEscapedFlash > 0) this.policeEscapedFlash = Math.max(0, this.policeEscapedFlash - dt);
+    if (this.pursuitStartFlash > 0) this.pursuitStartFlash = Math.max(0, this.pursuitStartFlash - dt);
     this.checkAchievements();
     this.pushHud();
   }
@@ -449,13 +478,16 @@ export class GameEngine {
   private updatePolice(dt: number) {
     if (!this.policeActive) {
       this.policeCooldown -= dt;
-      // Random pursuits keep every run different, but only once the player is rolling.
-      if (this.policeCooldown <= 0 && this.distanceM > 700 && Math.random() < dt * 0.08) {
+      // Spontaneous pursuits: a balanced random roll once the cooldown expires,
+      // so chases feel unpredictable but show up regularly in a normal run.
+      if (this.policeCooldown <= 0 && this.distanceM > 350 && Math.random() < dt * 0.22) {
         this.startPursuit();
       }
       return;
     }
 
+    // Fallback: if the player never finds an off-ramp, the police eventually
+    // break off — a pursuit is never an inescapable death sentence.
     this.policeRemaining -= dt;
     this.sirenTimer -= dt;
     if (this.sirenTimer <= 0) {
@@ -478,13 +510,106 @@ export class GameEngine {
       unit.y += (ty - unit.y) * Math.min(1, dt * 2.2);
     }
 
-    if (this.policeRemaining <= 0) this.endPursuit();
+    if (this.policeRemaining <= 0) this.endPursuit(false);
+  }
+
+  /* ---------- patrol cruisers in traffic ---------- */
+
+  private updatePatrols(dt: number, baseSpeed: number, factor: number) {
+    this.patrolCooldown -= dt;
+    if (this.patrolCooldown <= 0 && this.patrols.length < 2) {
+      this.patrolCooldown = 12 + Math.random() * 16;
+      const lane = Math.floor(Math.random() * this.lanes);
+      this.patrols.push({
+        active: true,
+        lane,
+        w: this.player.w,
+        h: this.player.h,
+        x: this.laneX(lane) - this.player.w / 2,
+        y: -this.player.h * 2,
+        speed: baseSpeed * 0.92,
+        rollTimer: 1.6,
+        escalated: false,
+      });
+    }
+
+    for (const p of this.patrols) {
+      if (!p.active) continue;
+      p.y += p.speed * factor * dt;
+      p.x += (this.laneX(p.lane) - p.w / 2 - p.x) * Math.min(1, dt * 4);
+
+      if (collides(this.player, p)) {
+        this.crash();
+        return;
+      }
+
+      // A patrol only sometimes escalates: it rolls a few times while on screen.
+      if (!p.escalated && !this.policeActive && p.y > 0 && p.y < this.height) {
+        p.rollTimer -= dt;
+        if (p.rollTimer <= 0) {
+          p.rollTimer = 1.6;
+          if (Math.random() < 0.22) {
+            p.escalated = true;
+            this.startPursuit();
+          }
+        }
+      }
+
+      if (p.y > this.height + p.h) p.active = false;
+    }
+    this.patrols = this.patrols.filter((p) => p.active);
+  }
+
+  /* ---------- highway exits ---------- */
+
+  private updateExits(dt: number, worldSpeed: number) {
+    this.exitCooldown -= dt;
+    if (this.exitCooldown <= 0 && this.exits.length === 0) {
+      // Exits come around more often during a chase, but never instantly, and
+      // they also show up in normal driving so they stay unpredictable.
+      this.exitCooldown = this.policeActive ? 9 + Math.random() * 9 : 22 + Math.random() * 20;
+      const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+      this.exits.push({
+        active: true,
+        y: -this.height * 0.34,
+        h: this.height * 0.32,
+        lane: side === "left" ? 0 : this.lanes - 1,
+        side,
+        taken: false,
+      });
+    }
+
+    for (const e of this.exits) {
+      if (!e.active) continue;
+      e.y += worldSpeed * dt;
+      const overlap = e.y < this.player.y + this.player.h && e.y + e.h > this.player.y;
+      if (!e.taken && overlap && this.playerLane === e.lane && this.targetLane === e.lane) {
+        e.taken = true;
+        this.takeExit();
+      }
+      if (e.y > this.height + e.h) e.active = false;
+    }
+    this.exits = this.exits.filter((e) => e.active);
+  }
+
+  private takeExit() {
+    if (this.policeActive) {
+      this.endPursuit(true);
+    } else {
+      this.score += 250;
+      this.sound.powerup();
+      this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 16, "#7dfcd6");
+    }
   }
 
   private startPursuit() {
     this.policeActive = true;
-    this.policeRemaining = 30;
+    // Give-up timer: long enough to be tense, short enough to stay fair.
+    this.policeRemaining = 40;
     this.sirenTimer = 0;
+    this.pursuitStartFlash = 2.4;
+    // A chase should get its first escape chance soon, but not immediately.
+    this.exitCooldown = Math.min(this.exitCooldown, 6 + Math.random() * 6);
     this.police = [0, 1].map((i) => ({
       lane: this.targetLane,
       targetLane: this.targetLane,
@@ -497,12 +622,13 @@ export class GameEngine {
     this.sound.policeStart();
   }
 
-  private endPursuit() {
+  private endPursuit(viaExit: boolean) {
     this.policeActive = false;
     this.police.length = 0;
     this.policeEscapes += 1;
     this.policeEscapedFlash = 3;
-    this.score += 1500;
+    this.score += viaExit ? 1500 : 900;
+    this.policeCooldown = 22 + Math.random() * 26;
     this.sound.escaped();
     this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 30, "#00ff9d");
   }
@@ -588,12 +714,29 @@ export class GameEngine {
     drawRoad(ctx, this.height, this.roadX, this.roadW, this.mode === "single" ? 1 : this.lanes, this.scroll, neon, this.boostMs > 0);
     drawSpeedLines(ctx, this.width, this.height, this.time, this.boostMs > 0 ? 0.6 : this.difficulty.currentLevel / 20);
 
+    for (const e of this.exits) {
+      if (e.active) drawExit(ctx, e, this.roadX, this.roadW, this.time, this.policeActive);
+    }
+
     for (const p of this.spawner.pickups) if (p.active) drawPickup(ctx, p);
 
     for (const car of this.spawner.cars) {
       if (!car.active) continue;
       drawCar(ctx, car, car.color, car.accent, car.style, { headlights: false });
     }
+
+    for (const p of this.patrols) {
+      if (!p.active) continue;
+      const flash = Math.floor(this.time * 6) % 2 === 0;
+      drawCar(ctx, p, "#0f1a3a", "#e8ecff", 0, { glow: flash ? "#2f6bff" : "#ff2d4f" });
+      ctx.save();
+      ctx.fillStyle = flash ? "#2f6bff" : "#ff2d4f";
+      ctx.shadowColor = ctx.fillStyle as string;
+      ctx.shadowBlur = 16;
+      ctx.fillRect(p.x + p.w * 0.18, p.y + p.h * 0.12, p.w * 0.64, p.h * 0.07);
+      ctx.restore();
+    }
+
 
     for (const unit of this.police) {
       const flash = Math.floor(this.time * 8) % 2 === 0;
@@ -661,6 +804,9 @@ export class GameEngine {
       policeRemaining: Math.max(0, Math.ceil(this.policeRemaining)),
       policeEscapedFlash: this.policeEscapedFlash > 0,
       policeEscapes: this.policeEscapes,
+      pursuitStartFlash: this.pursuitStartFlash > 0,
+      exitAvailable: this.exits.some((e) => e.active && !e.taken && e.y + e.h > 0 && e.y < this.height),
+      exitSide: this.exits.find((e) => e.active && !e.taken)?.side ?? null,
     });
   }
 
