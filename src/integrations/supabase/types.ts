@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      career_progress: {
+        Row: {
+          best_score: number
+          completed_at: string
+          level: number
+          user_id: string
+        }
+        Insert: {
+          best_score?: number
+          completed_at?: string
+          level: number
+          user_id: string
+        }
+        Update: {
+          best_score?: number
+          completed_at?: string
+          level?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           acceleration: number
