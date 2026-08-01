@@ -107,6 +107,15 @@ export class GameEngine {
   private policeEscapes = 0;
   private policeEscapedFlash = 0;
   private sirenTimer = 0;
+  private pursuitStartFlash = 0;
+
+  /* patrol cruisers riding in normal traffic */
+  private patrols: PatrolCar[] = [];
+  private patrolCooldown = 10;
+
+  /* highway exits */
+  private exits: HighwayExit[] = [];
+  private exitCooldown = 25;
   private lastAchievement: string | null = null;
 
   phase: GamePhase = "menu";
