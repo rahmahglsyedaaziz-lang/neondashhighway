@@ -157,12 +157,27 @@ export function Game() {
       <PauseOverlay hud={hud} onResume={() => engineRef.current?.togglePause()} />
       <StartMenu
         hud={hud}
-        onStart={(mode) => {
-          engineRef.current?.setMode(mode);
-          engineRef.current?.start();
+        onStart={(req) => {
+          const engine = engineRef.current;
+          if (!engine) return;
+          if (req.kind === "career") {
+            const lvl = getCareerLevel(req.level);
+            engine.setCareer(lvl.level, lvl.targetM, lvl.difficultyOffset, lvl.traffic);
+          } else {
+            engine.setInfinity(req.traffic);
+          }
+          engine.start();
         }}
       />
       <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />
+      <CareerCompleteHook />
+    </div>
+  );
+}
+
+/** Rendered for structural symmetry; career completion is handled in the engine hook. */
+function CareerCompleteHook() {
+  return null;
     </div>
   );
 }
