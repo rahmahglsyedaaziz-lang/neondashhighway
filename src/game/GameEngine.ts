@@ -6,12 +6,23 @@ import {
   SKIES,
   drawBackdrop,
   drawCar,
+  drawExit,
   drawParticles,
   drawPickup,
   drawRoad,
   drawSpeedLines,
 } from "./render";
-import type { GamePhase, HudState, NearMissEvent, Particle, PoliceUnit, Rect, RunStats } from "./types";
+import type {
+  GamePhase,
+  HighwayExit,
+  HudState,
+  NearMissEvent,
+  Particle,
+  PatrolCar,
+  PoliceUnit,
+  Rect,
+  RunStats,
+} from "./types";
 
 const LANES = 3;
 export type RoadMode = "single" | "double" | "classic";
