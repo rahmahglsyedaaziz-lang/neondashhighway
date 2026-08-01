@@ -165,7 +165,7 @@ export class GameEngine {
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.roadW = Math.min(this.width * 0.92, this.height * 0.62, 560) * MODE_WIDTH[this.mode];
+    this.roadW = Math.min(this.width * 0.98, this.height * 0.78, 640);
     this.roadX = (this.width - this.roadW) / 2;
     const laneW = this.roadW / this.lanes;
     this.player.w = laneW * 0.6;
@@ -181,9 +181,27 @@ export class GameEngine {
 
   /* ---------- controls ---------- */
 
+  /** Lowest lane index the player may occupy (two-way keeps them on their side). */
+  private get minPlayerLane() {
+    return this.trafficMode === "twoway" ? this.lanes / 2 : 0;
+  }
+
+  private get playerLanes() {
+    const out: number[] = [];
+    for (let l = this.minPlayerLane; l < this.lanes; l++) out.push(l);
+    return out;
+  }
+
+  private get oncomingLanes() {
+    if (this.trafficMode !== "twoway") return [];
+    const out: number[] = [];
+    for (let l = 0; l < this.lanes / 2; l++) out.push(l);
+    return out;
+  }
+
   move(dir: -1 | 1) {
     if (this.phase !== "playing") return;
-    const next = Math.max(0, Math.min(this.lanes - 1, this.targetLane + dir));
+    const next = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane + dir));
     if (next === this.targetLane) return;
     this.targetLane = next;
     this.sound.laneSwitch();
