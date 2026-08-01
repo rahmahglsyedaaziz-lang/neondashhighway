@@ -442,6 +442,10 @@ export class GameEngine {
     if (this.comboTimer <= 0 && this.combo > 0) this.combo = 0;
 
     this.difficulty.update(this.distanceM);
+    if (this.gameMode === "career" && this.distanceM >= this.careerTargetM) {
+      this.finishCareerLevel();
+      return;
+    }
     this.displayScore += (this.score - this.displayScore) * Math.min(1, dt * 9);
     if (Math.abs(this.score - this.displayScore) < 0.5) this.displayScore = this.score;
     this.shake *= 0.88;
@@ -544,8 +548,9 @@ export class GameEngine {
       unit.laneTimer -= dt;
       if (unit.laneTimer <= 0) {
         unit.laneTimer = 0.5 + Math.random() * 0.7;
-        const drift = Math.random() < 0.65 ? this.targetLane : Math.floor(Math.random() * this.lanes);
-        unit.targetLane = Math.max(0, Math.min(this.lanes - 1, drift));
+        const lanes = this.playerLanes;
+        const drift = Math.random() < 0.65 ? this.targetLane : lanes[Math.floor(Math.random() * lanes.length)];
+        unit.targetLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, drift));
       }
       const tx = this.laneX(unit.targetLane) - unit.w / 2;
       unit.x += (tx - unit.x) * Math.min(1, dt * 5);
@@ -611,12 +616,14 @@ export class GameEngine {
       // Exits come around more often during a chase, but never instantly, and
       // they also show up in normal driving so they stay unpredictable.
       this.exitCooldown = this.policeActive ? 9 + Math.random() * 9 : 22 + Math.random() * 20;
-      const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+      // In two-way traffic the shoulder is only on the player's own side.
+      const side: "left" | "right" =
+        this.trafficMode === "twoway" ? "right" : Math.random() < 0.5 ? "left" : "right";
       this.exits.push({
         active: true,
         y: -this.height * 0.34,
         h: this.height * 0.32,
-        lane: side === "left" ? 0 : this.lanes - 1,
+        lane: side === "left" ? this.minPlayerLane : this.lanes - 1,
         side,
         taken: false,
       });
