@@ -41,6 +41,11 @@ const INITIAL: HudState = {
   pursuitStartFlash: false,
   exitAvailable: false,
   exitSide: null,
+  gameMode: "infinity",
+  trafficMode: "oneway",
+  careerLevel: 0,
+  careerTargetM: 0,
+  careerComplete: false,
 };
 
 export function Game() {
