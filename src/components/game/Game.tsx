@@ -92,6 +92,20 @@ export function Game() {
         /* score sync failed — local best still shown */
       });
     };
+    engine.onCareerComplete = (level, score) => {
+      // Guests keep progress locally; signed-in players also earn car rewards.
+      addLocalCareer(level);
+      if (!signedInRef.current) return;
+      void sendCareer({ data: { level, score } })
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: ["career"] });
+          void queryClient.invalidateQueries({ queryKey: ["unlocks"] });
+        })
+        .catch(() => {
+          /* career sync failed — local progress still applies */
+        });
+    };
+
 
 
     const onResize = () => engine.resize();
