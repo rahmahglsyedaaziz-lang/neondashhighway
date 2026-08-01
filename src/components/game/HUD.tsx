@@ -34,7 +34,12 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
           )}
           {hud.policeActive && (
             <div className="animate-pop rounded-full border border-destructive/70 bg-destructive/20 px-3 py-1 text-xs font-black tracking-wider text-destructive">
-              🚨 SURVIVE {hud.policeRemaining}s
+              🚨 PURSUIT — FIND THE EXIT ({hud.policeRemaining}s)
+            </div>
+          )}
+          {hud.exitAvailable && (
+            <div className="animate-pop rounded-full border border-accent/70 bg-accent/15 px-3 py-1 text-xs font-black tracking-wider text-accent">
+              {hud.exitSide === "left" ? "◀ EXIT LEFT" : "EXIT RIGHT ▶"}
             </div>
           )}
         </div>
