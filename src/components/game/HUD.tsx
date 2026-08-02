@@ -96,6 +96,21 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
         </div>
       )}
 
+      {(hud.mapTransition || hud.mapFlash) && (
+        <div className="animate-fade-in pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">
+            {hud.mapTransition ? "Taking the exit…" : "Now driving"}
+          </p>
+          <p className="text-glow-accent mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+            {hud.mapName}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{hud.mapTagline}</p>
+          <p className="mt-1 text-[11px] font-semibold text-primary">
+            Score, progress and car carry over
+          </p>
+        </div>
+      )}
+
       {hud.lastAchievement && (
         <div className="animate-fade-up mx-auto mt-3 w-fit rounded-xl border border-primary/50 bg-card/85 px-4 py-2 text-sm font-semibold text-primary backdrop-blur">
           Achievement unlocked — {hud.lastAchievement}
