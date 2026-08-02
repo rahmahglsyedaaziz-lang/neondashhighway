@@ -76,6 +76,8 @@ export function GameOverModal({ hud, onRestart }: Props) {
           ))}
         </div>
 
+        {hud.careerLevel > 0 && !hud.careerComplete && <CareerHint level={hud.careerLevel} />}
+
         <MiniLeaderboard />
 
 
