@@ -2,6 +2,7 @@ import { DifficultyManager } from "./DifficultyManager";
 import { collides, nearMissGap } from "./CollisionManager";
 import { SoundManager } from "./SoundManager";
 import { TrafficSpawner } from "./TrafficSpawner";
+import { MAPS, nextMapIndex } from "./maps";
 import {
   SKIES,
   drawBackdrop,
