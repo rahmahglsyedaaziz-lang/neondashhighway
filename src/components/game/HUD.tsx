@@ -24,6 +24,9 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
             <span className="hud-label">Level {hud.level}</span>
             <span className="hud-sub uppercase tracking-[0.2em]">{hud.timeOfDay}</span>
           </div>
+          <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary">
+            {hud.mapName}
+          </span>
           {hud.combo > 0 && (
             <div
               key={hud.combo}
@@ -90,6 +93,21 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
       {hud.policeEscapedFlash && (
         <div className="animate-pop pointer-events-none absolute inset-x-0 top-1/4 text-center">
           <span className="text-glow-accent text-2xl font-black sm:text-3xl">🚨 ESCAPED!</span>
+        </div>
+      )}
+
+      {(hud.mapTransition || hud.mapFlash) && (
+        <div className="animate-fade-in pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-accent">
+            {hud.mapTransition ? "Taking the exit…" : "Now driving"}
+          </p>
+          <p className="text-glow-accent mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+            {hud.mapName}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{hud.mapTagline}</p>
+          <p className="mt-1 text-[11px] font-semibold text-primary">
+            Score, progress and car carry over
+          </p>
         </div>
       )}
 

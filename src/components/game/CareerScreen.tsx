@@ -10,6 +10,7 @@ import {
 } from "@/game/career";
 import { getCareerProgress } from "@/lib/career.functions";
 import { useSessionUser } from "@/lib/account";
+import { CareerHint } from "@/components/game/CareerHint";
 
 /** Career level grid — 35 levels, unlocked one at a time, replayable. */
 export function CareerScreen({ onPlay }: { onPlay: (level: number) => void }) {
@@ -67,6 +68,8 @@ export function CareerScreen({ onPlay }: { onPlay: (level: number) => void }) {
           );
         })}
       </div>
+
+      <CareerHint level={unlockedTo} />
 
       <p className="mt-3 text-xs text-muted-foreground">
         Clear a level to unlock the next one. Levels 5, 10, 15, 20, 25, 30 and 35 unlock a car in your

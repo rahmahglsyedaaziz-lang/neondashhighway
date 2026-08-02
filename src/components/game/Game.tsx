@@ -49,6 +49,11 @@ const INITIAL: HudState = {
   careerLevel: 0,
   careerTargetM: 0,
   careerComplete: false,
+  mapName: "NEON CITY HIGHWAY",
+  mapTagline: "Downtown lights and dense traffic.",
+  mapIndex: 0,
+  mapTransition: false,
+  mapFlash: false,
 };
 
 export function Game() {

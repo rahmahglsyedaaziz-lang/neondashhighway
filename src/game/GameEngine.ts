@@ -2,8 +2,9 @@ import { DifficultyManager } from "./DifficultyManager";
 import { collides, nearMissGap } from "./CollisionManager";
 import { SoundManager } from "./SoundManager";
 import { TrafficSpawner } from "./TrafficSpawner";
+import { MAPS, nextMapIndex } from "./maps";
 import {
-  SKIES,
+  
   drawBackdrop,
   drawCar,
   drawExit,
@@ -120,6 +121,14 @@ export class GameEngine {
   /* highway exits */
   private exits: HighwayExit[] = [];
   private exitCooldown = 25;
+
+  /* map system — exits drive the player onto a different road, same run */
+  private mapIndex = 0;
+  /** Active exit → new map transition (camera pan + fade), or null. */
+  private transit: { t: number; dur: number; dir: -1 | 1; swapped: boolean } | null = null;
+  private cameraX = 0;
+  private mapFlash = 0;
+
   private lastAchievement: string | null = null;
 
   phase: GamePhase = "menu";
@@ -284,6 +293,10 @@ export class GameEngine {
     this.exits.length = 0;
     this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
+    this.mapIndex = 0;
+    this.transit = null;
+    this.cameraX = 0;
+    this.mapFlash = 0;
     this.careerComplete = false;
     const startLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 2, this.lanes - 1));
     this.playerLane = startLane;
@@ -338,6 +351,14 @@ export class GameEngine {
     }
 
     this.updateParticles(dt);
+
+    // Exit → new map: the run keeps running, only the road changes.
+    if (this.transit && this.phase === "playing") {
+      this.updateTransition(dt);
+      this.pushHud();
+      return;
+    }
+    if (this.mapFlash > 0) this.mapFlash = Math.max(0, this.mapFlash - dt);
 
     if (this.phase !== "playing") {
       this.shake *= 0.9;
@@ -680,12 +701,88 @@ export class GameEngine {
 
   private takeExit() {
     if (this.policeActive) {
+      // An exit is still the escape route out of a pursuit.
       this.endPursuit(true);
     } else {
       this.score += 250;
       this.sound.powerup();
       this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 16, "#7dfcd6");
     }
+    const side = this.exits.find((e) => e.taken)?.side ?? "right";
+    this.beginMapTransition(side);
+  }
+
+  /* ---------- exit → new map ---------- */
+
+  /**
+   * Starts the smooth ramp-off. Nothing about the run resets: score, coins,
+   * distance, difficulty, career target and the player's car all carry over —
+   * only the road underneath changes.
+   */
+  private beginMapTransition(side: "left" | "right") {
+    if (this.transit) return;
+    this.transit = { t: 0, dur: 2.3, dir: side === "left" ? -1 : 1, swapped: false };
+    this.sound.powerup();
+  }
+
+  private updateTransition(dt: number) {
+    const tr = this.transit;
+    if (!tr) return;
+    tr.t += dt;
+    const p = Math.min(1, tr.t / tr.dur);
+    const ease = (v: number) => v * v * (3 - 2 * v);
+    // The road keeps flowing under the car so the ramp feels driven, not cut.
+    this.scroll += this.difficulty.profile.speed * 0.7 * dt;
+    this.distanceM += (this.difficulty.profile.speed * 0.7 * dt) / 10;
+
+    const half = tr.dur / 2;
+    const reach = this.roadW * 0.85;
+
+    if (tr.t < half) {
+      // Drive onto the off-ramp: camera and car glide toward the exit side.
+      const k = ease(tr.t / half);
+      this.cameraX = tr.dir * reach * k;
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2 + tr.dir * reach * k * 0.85;
+      this.tilt = tr.dir * 0.18 * k;
+      if (Math.random() < 0.5) this.emitSmoke();
+    } else {
+      if (!tr.swapped) {
+        tr.swapped = true;
+        this.mapIndex = nextMapIndex(this.mapIndex);
+        this.mapFlash = 3;
+        // Fresh road: clear the old traffic, keep every bit of run state.
+        this.spawner.reset();
+        this.patrols.length = 0;
+        this.exits.length = 0;
+        this.exitCooldown = 18 + Math.random() * 16;
+        this.patrolCooldown = 8 + Math.random() * 8;
+        this.targetLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane));
+        this.playerLane = this.targetLane;
+      }
+      // Merge onto the new road: camera and car settle back into the lanes.
+      const k = ease((tr.t - half) / half);
+      this.cameraX = tr.dir * reach * (1 - k);
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2 + tr.dir * reach * (1 - k) * 0.85;
+      this.tilt = tr.dir * 0.18 * (1 - k);
+    }
+
+    if (p >= 1) {
+      this.transit = null;
+      this.cameraX = 0;
+      this.tilt = 0;
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2;
+    }
+  }
+
+  /** 0 while driving normally, up to 1 at the darkest point of a map change. */
+  private get transitionFade() {
+    if (!this.transit) return 0;
+    const p = Math.min(1, this.transit.t / this.transit.dur);
+    return Math.sin(p * Math.PI) * 0.75;
+  }
+
+  get currentMap() {
+    return MAPS[this.mapIndex];
   }
 
   private startPursuit() {
@@ -790,13 +887,15 @@ export class GameEngine {
 
   private render() {
     const ctx = this.ctx;
-    const sky = SKIES[this.timeOfDay];
+    const sky = this.currentMap.skies[this.timeOfDay];
     ctx.save();
     if (this.shake > 0.4) {
       ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     }
     drawBackdrop(ctx, this.width, this.height, this.roadX, this.roadW, sky);
-    const neon = this.timeOfDay === "night" ? "#00e5ff" : this.timeOfDay === "sunset" ? "#ff2d6f" : "#7dfcd6";
+    // Camera follows the car onto the off-ramp during a map change.
+    if (this.cameraX !== 0) ctx.translate(-this.cameraX, 0);
+    const neon = this.currentMap.neon;
     drawRoad(
       ctx,
       this.height,
@@ -875,6 +974,13 @@ export class GameEngine {
       ctx.fillStyle = "rgba(0,229,255,0.08)";
       ctx.fillRect(0, 0, this.width, this.height);
     }
+
+    // Soft cross-fade while the road swaps to the next map.
+    const fade = this.transitionFade;
+    if (fade > 0) {
+      ctx.fillStyle = `rgba(3,6,12,${fade.toFixed(3)})`;
+      ctx.fillRect(this.cameraX - this.width, -this.height, this.width * 3, this.height * 3);
+    }
     ctx.restore();
   }
 
@@ -912,6 +1018,11 @@ export class GameEngine {
       pursuitStartFlash: this.pursuitStartFlash > 0,
       exitAvailable: this.exits.some((e) => e.active && !e.taken && e.y + e.h > 0 && e.y < this.height),
       exitSide: this.exits.find((e) => e.active && !e.taken)?.side ?? null,
+      mapName: this.currentMap.name,
+      mapTagline: this.currentMap.tagline,
+      mapIndex: this.mapIndex,
+      mapTransition: !!this.transit,
+      mapFlash: this.mapFlash > 0,
     });
   }
 

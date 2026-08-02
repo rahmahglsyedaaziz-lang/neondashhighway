@@ -137,4 +137,12 @@ export interface HudState {
   careerTargetM: number;
   /** True when the last run ended by clearing a career level. */
   careerComplete: boolean;
+  /** Current map the player is driving on (exits switch maps mid-run). */
+  mapName: string;
+  mapTagline: string;
+  mapIndex: number;
+  /** True while the exit → new map camera transition is playing. */
+  mapTransition: boolean;
+  /** Brief "new map" banner right after arriving. */
+  mapFlash: boolean;
 }
