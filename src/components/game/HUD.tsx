@@ -24,6 +24,9 @@ export function HUD({ hud, onPause, onToggleSound }: Props) {
             <span className="hud-label">Level {hud.level}</span>
             <span className="hud-sub uppercase tracking-[0.2em]">{hud.timeOfDay}</span>
           </div>
+          <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary">
+            {hud.mapName}
+          </span>
           {hud.combo > 0 && (
             <div
               key={hud.combo}
