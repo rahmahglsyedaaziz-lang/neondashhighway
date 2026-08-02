@@ -1018,6 +1018,11 @@ export class GameEngine {
       pursuitStartFlash: this.pursuitStartFlash > 0,
       exitAvailable: this.exits.some((e) => e.active && !e.taken && e.y + e.h > 0 && e.y < this.height),
       exitSide: this.exits.find((e) => e.active && !e.taken)?.side ?? null,
+      mapName: this.currentMap.name,
+      mapTagline: this.currentMap.tagline,
+      mapIndex: this.mapIndex,
+      mapTransition: !!this.transit,
+      mapFlash: this.mapFlash > 0,
     });
   }
 
