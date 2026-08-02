@@ -4,7 +4,7 @@ import { SoundManager } from "./SoundManager";
 import { TrafficSpawner } from "./TrafficSpawner";
 import { MAPS, nextMapIndex } from "./maps";
 import {
-  SKIES,
+  
   drawBackdrop,
   drawCar,
   drawExit,
