@@ -352,6 +352,14 @@ export class GameEngine {
 
     this.updateParticles(dt);
 
+    // Exit → new map: the run keeps running, only the road changes.
+    if (this.transit && this.phase === "playing") {
+      this.updateTransition(dt);
+      this.pushHud();
+      return;
+    }
+    if (this.mapFlash > 0) this.mapFlash = Math.max(0, this.mapFlash - dt);
+
     if (this.phase !== "playing") {
       this.shake *= 0.9;
       return;
