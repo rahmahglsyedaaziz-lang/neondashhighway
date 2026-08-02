@@ -974,6 +974,13 @@ export class GameEngine {
       ctx.fillStyle = "rgba(0,229,255,0.08)";
       ctx.fillRect(0, 0, this.width, this.height);
     }
+
+    // Soft cross-fade while the road swaps to the next map.
+    const fade = this.transitionFade;
+    if (fade > 0) {
+      ctx.fillStyle = `rgba(3,6,12,${fade.toFixed(3)})`;
+      ctx.fillRect(this.cameraX - this.width, -this.height, this.width * 3, this.height * 3);
+    }
     ctx.restore();
   }
 
