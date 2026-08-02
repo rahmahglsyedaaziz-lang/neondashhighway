@@ -893,7 +893,9 @@ export class GameEngine {
       ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     }
     drawBackdrop(ctx, this.width, this.height, this.roadX, this.roadW, sky);
-    const neon = this.timeOfDay === "night" ? "#00e5ff" : this.timeOfDay === "sunset" ? "#ff2d6f" : "#7dfcd6";
+    // Camera follows the car onto the off-ramp during a map change.
+    if (this.cameraX !== 0) ctx.translate(-this.cameraX, 0);
+    const neon = this.currentMap.neon;
     drawRoad(
       ctx,
       this.height,
