@@ -887,7 +887,7 @@ export class GameEngine {
 
   private render() {
     const ctx = this.ctx;
-    const sky = SKIES[this.timeOfDay];
+    const sky = this.currentMap.skies[this.timeOfDay];
     ctx.save();
     if (this.shake > 0.4) {
       ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
