@@ -1,6 +1,7 @@
 import { Share2, RotateCcw, Trophy } from "lucide-react";
 import { ACHIEVEMENTS } from "@/game/GameEngine";
 import { MiniLeaderboard } from "@/components/game/MiniLeaderboard";
+import { CareerHint } from "@/components/game/CareerHint";
 import type { HudState } from "@/game/types";
 
 interface Props {
