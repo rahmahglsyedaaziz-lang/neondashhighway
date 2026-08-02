@@ -701,12 +701,88 @@ export class GameEngine {
 
   private takeExit() {
     if (this.policeActive) {
+      // An exit is still the escape route out of a pursuit.
       this.endPursuit(true);
     } else {
       this.score += 250;
       this.sound.powerup();
       this.emitSparks(this.player.x + this.player.w / 2, this.player.y, 16, "#7dfcd6");
     }
+    const side = this.exits.find((e) => e.taken)?.side ?? "right";
+    this.beginMapTransition(side);
+  }
+
+  /* ---------- exit → new map ---------- */
+
+  /**
+   * Starts the smooth ramp-off. Nothing about the run resets: score, coins,
+   * distance, difficulty, career target and the player's car all carry over —
+   * only the road underneath changes.
+   */
+  private beginMapTransition(side: "left" | "right") {
+    if (this.transit) return;
+    this.transit = { t: 0, dur: 2.3, dir: side === "left" ? -1 : 1, swapped: false };
+    this.sound.powerup();
+  }
+
+  private updateTransition(dt: number) {
+    const tr = this.transit;
+    if (!tr) return;
+    tr.t += dt;
+    const p = Math.min(1, tr.t / tr.dur);
+    const ease = (v: number) => v * v * (3 - 2 * v);
+    // The road keeps flowing under the car so the ramp feels driven, not cut.
+    this.scroll += this.difficulty.profile.speed * 0.7 * dt;
+    this.distanceM += (this.difficulty.profile.speed * 0.7 * dt) / 10;
+
+    const half = tr.dur / 2;
+    const reach = this.roadW * 0.85;
+
+    if (tr.t < half) {
+      // Drive onto the off-ramp: camera and car glide toward the exit side.
+      const k = ease(tr.t / half);
+      this.cameraX = tr.dir * reach * k;
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2 + tr.dir * reach * k * 0.85;
+      this.tilt = tr.dir * 0.18 * k;
+      if (Math.random() < 0.5) this.emitSmoke();
+    } else {
+      if (!tr.swapped) {
+        tr.swapped = true;
+        this.mapIndex = nextMapIndex(this.mapIndex);
+        this.mapFlash = 3;
+        // Fresh road: clear the old traffic, keep every bit of run state.
+        this.spawner.reset();
+        this.patrols.length = 0;
+        this.exits.length = 0;
+        this.exitCooldown = 18 + Math.random() * 16;
+        this.patrolCooldown = 8 + Math.random() * 8;
+        this.targetLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane));
+        this.playerLane = this.targetLane;
+      }
+      // Merge onto the new road: camera and car settle back into the lanes.
+      const k = ease((tr.t - half) / half);
+      this.cameraX = tr.dir * reach * (1 - k);
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2 + tr.dir * reach * (1 - k) * 0.85;
+      this.tilt = tr.dir * 0.18 * (1 - k);
+    }
+
+    if (p >= 1) {
+      this.transit = null;
+      this.cameraX = 0;
+      this.tilt = 0;
+      this.player.x = this.laneX(this.targetLane) - this.player.w / 2;
+    }
+  }
+
+  /** 0 while driving normally, up to 1 at the darkest point of a map change. */
+  private get transitionFade() {
+    if (!this.transit) return 0;
+    const p = Math.min(1, this.transit.t / this.transit.dur);
+    return Math.sin(p * Math.PI) * 0.75;
+  }
+
+  get currentMap() {
+    return MAPS[this.mapIndex];
   }
 
   private startPursuit() {
