@@ -293,6 +293,10 @@ export class GameEngine {
     this.exits.length = 0;
     this.exitCooldown = 20 + Math.random() * 18;
     this.particles.length = 0;
+    this.mapIndex = 0;
+    this.transit = null;
+    this.cameraX = 0;
+    this.mapFlash = 0;
     this.careerComplete = false;
     const startLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 2, this.lanes - 1));
     this.playerLane = startLane;
