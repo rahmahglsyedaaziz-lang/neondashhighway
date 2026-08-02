@@ -10,6 +10,7 @@ import {
 } from "@/game/career";
 import { getCareerProgress } from "@/lib/career.functions";
 import { useSessionUser } from "@/lib/account";
+import { CareerHint } from "@/components/game/CareerHint";
 
 /** Career level grid — 35 levels, unlocked one at a time, replayable. */
 export function CareerScreen({ onPlay }: { onPlay: (level: number) => void }) {
