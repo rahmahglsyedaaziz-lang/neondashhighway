@@ -121,6 +121,14 @@ export class GameEngine {
   /* highway exits */
   private exits: HighwayExit[] = [];
   private exitCooldown = 25;
+
+  /* map system — exits drive the player onto a different road, same run */
+  private mapIndex = 0;
+  /** Active exit → new map transition (camera pan + fade), or null. */
+  private transit: { t: number; dur: number; dir: -1 | 1; swapped: boolean } | null = null;
+  private cameraX = 0;
+  private mapFlash = 0;
+
   private lastAchievement: string | null = null;
 
   phase: GamePhase = "menu";
