@@ -54,8 +54,19 @@ function Dialog({
   );
 }
 
-export function StartMenu({ hud, onStart }: { hud: HudState; onStart: (req: StartRequest) => void }) {
-  const [step, setStep] = useState<null | "mode" | "career" | "traffic">(null);
+export type MenuStep = null | "mode" | "career" | "traffic";
+
+export function StartMenu({
+  hud,
+  onStart,
+  step,
+  setStep,
+}: {
+  hud: HudState;
+  onStart: (req: StartRequest) => void;
+  step: MenuStep;
+  setStep: (s: MenuStep) => void;
+}) {
   if (hud.phase !== "menu") return null;
 
   return (
