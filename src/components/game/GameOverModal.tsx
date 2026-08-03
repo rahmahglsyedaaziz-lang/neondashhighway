@@ -12,10 +12,11 @@ interface Props {
   onBackToMenu: (step: MenuStep) => void;
 }
 
-export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
+export function GameOverModal({ hud, onRestart, onNextLevel, onBackToMenu }: Props) {
   if (hud.phase !== "gameover") return null;
   const isRecord = hud.score > 0 && hud.score >= hud.highScore;
   const isCareer = hud.gameMode === "career";
+  const canAdvance = isCareer && hud.careerComplete && hud.careerLevel < 35;
 
   const share = async () => {
     const text = `I scored ${hud.score} points in Traffic Dodge. Can you beat that?`;
