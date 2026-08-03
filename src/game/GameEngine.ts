@@ -210,7 +210,8 @@ export class GameEngine {
 
   move(dir: -1 | 1) {
     if (this.phase !== "playing") return;
-    const next = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane + dir));
+    // Two-way: the player may cross onto the oncoming side as a risky play.
+    const next = Math.max(0, Math.min(this.lanes - 1, this.targetLane + dir));
     if (next === this.targetLane) return;
     this.targetLane = next;
     this.sound.laneSwitch();
@@ -311,6 +312,15 @@ export class GameEngine {
     this.phase = "countdown";
     this.lastAchievement = null;
     this.sound.startEngine();
+    this.pushHud();
+  }
+
+
+  /** Return to the main menu without touching any saved progress. */
+  toMenu() {
+    this.phase = "menu";
+    this.sound.stopMusic();
+    this.sound.setEngineIntensity(0);
     this.pushHud();
   }
 
@@ -756,7 +766,7 @@ export class GameEngine {
         this.exits.length = 0;
         this.exitCooldown = 18 + Math.random() * 16;
         this.patrolCooldown = 8 + Math.random() * 8;
-        this.targetLane = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane));
+        this.targetLane = Math.max(0, Math.min(this.lanes - 1, this.targetLane));
         this.playerLane = this.targetLane;
       }
       // Merge onto the new road: camera and car settle back into the lanes.

@@ -5,7 +5,7 @@ import { GameEngine } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
-import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
+import { Countdown, PauseOverlay, StartMenu, type MenuStep } from "./Overlays";
 import { submitRun } from "@/lib/game.functions";
 import { completeCareerLevel } from "@/lib/career.functions";
 import { addLocalCareer, getCareerLevel } from "@/game/career";
@@ -60,6 +60,7 @@ export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<HudState>(INITIAL);
+  const [menuStep, setMenuStep] = useState<MenuStep>(null);
   const { user } = useSessionUser();
   const { data: cars } = useCars();
   const { data: profile } = useProfile(user?.id);
@@ -181,6 +182,8 @@ export function Game() {
       <PauseOverlay hud={hud} onResume={() => engineRef.current?.togglePause()} />
       <StartMenu
         hud={hud}
+        step={menuStep}
+        setStep={setMenuStep}
         onStart={(req) => {
           const engine = engineRef.current;
           if (!engine) return;
@@ -193,7 +196,14 @@ export function Game() {
           engine.start();
         }}
       />
-      <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />
+      <GameOverModal
+        hud={hud}
+        onRestart={() => engineRef.current?.start()}
+        onBackToMenu={(step) => {
+          setMenuStep(step);
+          engineRef.current?.toMenu();
+        }}
+      />
     </div>
   );
 }

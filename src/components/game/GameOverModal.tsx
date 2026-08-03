@@ -1,17 +1,20 @@
-import { Share2, RotateCcw, Trophy } from "lucide-react";
+import { Share2, RotateCcw, Trophy, Home, ChevronLeft } from "lucide-react";
 import { ACHIEVEMENTS } from "@/game/GameEngine";
 import { MiniLeaderboard } from "@/components/game/MiniLeaderboard";
 import { CareerHint } from "@/components/game/CareerHint";
+import type { MenuStep } from "@/components/game/Overlays";
 import type { HudState } from "@/game/types";
 
 interface Props {
   hud: HudState;
   onRestart: () => void;
+  onBackToMenu: (step: MenuStep) => void;
 }
 
-export function GameOverModal({ hud, onRestart }: Props) {
+export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
   if (hud.phase !== "gameover") return null;
   const isRecord = hud.score > 0 && hud.score >= hud.highScore;
+  const isCareer = hud.gameMode === "career";
 
   const share = async () => {
     const text = `I scored ${hud.score} points in Traffic Dodge. Can you beat that?`;
@@ -88,6 +91,17 @@ export function GameOverModal({ hud, onRestart }: Props) {
           </button>
           <button className="btn-ghost" onClick={share} aria-label="Share score">
             <Share2 className="size-4" /> Share
+          </button>
+        </div>
+        <div className="mt-3 flex gap-3">
+          <button
+            className="btn-ghost flex-1 !py-2 !text-xs"
+            onClick={() => onBackToMenu(isCareer ? "career" : "traffic")}
+          >
+            <ChevronLeft className="size-4" /> {isCareer ? "Back to career" : "Back to infinity"}
+          </button>
+          <button className="btn-ghost flex-1 !py-2 !text-xs" onClick={() => onBackToMenu("mode")}>
+            <Home className="size-4" /> Back to menu
           </button>
         </div>
       </div>
