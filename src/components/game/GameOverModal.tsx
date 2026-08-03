@@ -88,12 +88,19 @@ export function GameOverModal({ hud, onRestart, onNextLevel, onBackToMenu }: Pro
 
 
         <div className="mt-6 flex gap-3">
+          {canAdvance && (
+            <button className="btn-neon flex-1" onClick={onNextLevel}>
+              <ChevronRight className="size-4" /> Next Level
+            </button>
+          )}
           <button className="btn-neon flex-1" onClick={onRestart}>
             <RotateCcw className="size-4" /> Play again
           </button>
-          <button className="btn-ghost" onClick={share} aria-label="Share score">
-            <Share2 className="size-4" /> Share
-          </button>
+          {!isCareer && (
+            <button className="btn-ghost" onClick={share} aria-label="Share score">
+              <Share2 className="size-4" /> Share
+            </button>
+          )}
         </div>
         <div className="mt-3 flex gap-3">
           <button
