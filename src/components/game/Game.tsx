@@ -5,7 +5,7 @@ import { GameEngine } from "@/game/GameEngine";
 import type { HudState } from "@/game/types";
 import { HUD } from "./HUD";
 import { GameOverModal } from "./GameOverModal";
-import { Countdown, PauseOverlay, StartMenu } from "./Overlays";
+import { Countdown, PauseOverlay, StartMenu, type MenuStep } from "./Overlays";
 import { submitRun } from "@/lib/game.functions";
 import { completeCareerLevel } from "@/lib/career.functions";
 import { addLocalCareer, getCareerLevel } from "@/game/career";
