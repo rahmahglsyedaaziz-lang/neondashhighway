@@ -1,4 +1,4 @@
-import { Share2, RotateCcw, Trophy, Home, ChevronLeft } from "lucide-react";
+import { Share2, RotateCcw, Trophy, Home, ChevronLeft, ChevronRight } from "lucide-react";
 import { ACHIEVEMENTS } from "@/game/GameEngine";
 import { MiniLeaderboard } from "@/components/game/MiniLeaderboard";
 import { CareerHint } from "@/components/game/CareerHint";
@@ -8,13 +8,15 @@ import type { HudState } from "@/game/types";
 interface Props {
   hud: HudState;
   onRestart: () => void;
+  onNextLevel?: () => void;
   onBackToMenu: (step: MenuStep) => void;
 }
 
-export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
+export function GameOverModal({ hud, onRestart, onNextLevel, onBackToMenu }: Props) {
   if (hud.phase !== "gameover") return null;
   const isRecord = hud.score > 0 && hud.score >= hud.highScore;
   const isCareer = hud.gameMode === "career";
+  const canAdvance = isCareer && hud.careerComplete && hud.careerLevel < 35;
 
   const share = async () => {
     const text = `I scored ${hud.score} points in Traffic Dodge. Can you beat that?`;
@@ -86,12 +88,19 @@ export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
 
 
         <div className="mt-6 flex gap-3">
+          {canAdvance && (
+            <button className="btn-neon flex-1" onClick={onNextLevel}>
+              <ChevronRight className="size-4" /> Next Level
+            </button>
+          )}
           <button className="btn-neon flex-1" onClick={onRestart}>
             <RotateCcw className="size-4" /> Play again
           </button>
-          <button className="btn-ghost" onClick={share} aria-label="Share score">
-            <Share2 className="size-4" /> Share
-          </button>
+          {!isCareer && (
+            <button className="btn-ghost" onClick={share} aria-label="Share score">
+              <Share2 className="size-4" /> Share
+            </button>
+          )}
         </div>
         <div className="mt-3 flex gap-3">
           <button

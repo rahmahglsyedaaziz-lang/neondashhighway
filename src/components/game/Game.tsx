@@ -199,6 +199,15 @@ export function Game() {
       <GameOverModal
         hud={hud}
         onRestart={() => engineRef.current?.start()}
+        onNextLevel={() => {
+          const engine = engineRef.current;
+          if (!engine) return;
+          const nextLevel = hud.careerLevel + 1;
+          if (nextLevel > 35) return;
+          const lvl = getCareerLevel(nextLevel);
+          engine.setCareer(lvl.level, lvl.targetM, lvl.difficultyOffset, lvl.traffic);
+          engine.start();
+        }}
         onBackToMenu={(step) => {
           setMenuStep(step);
           engineRef.current?.toMenu();
