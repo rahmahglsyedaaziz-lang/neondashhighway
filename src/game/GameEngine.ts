@@ -210,7 +210,8 @@ export class GameEngine {
 
   move(dir: -1 | 1) {
     if (this.phase !== "playing") return;
-    const next = Math.max(this.minPlayerLane, Math.min(this.lanes - 1, this.targetLane + dir));
+    // Two-way: the player may cross onto the oncoming side as a risky play.
+    const next = Math.max(0, Math.min(this.lanes - 1, this.targetLane + dir));
     if (next === this.targetLane) return;
     this.targetLane = next;
     this.sound.laneSwitch();
