@@ -181,6 +181,8 @@ export function Game() {
       <PauseOverlay hud={hud} onResume={() => engineRef.current?.togglePause()} />
       <StartMenu
         hud={hud}
+        step={menuStep}
+        setStep={setMenuStep}
         onStart={(req) => {
           const engine = engineRef.current;
           if (!engine) return;
@@ -193,7 +195,14 @@ export function Game() {
           engine.start();
         }}
       />
-      <GameOverModal hud={hud} onRestart={() => engineRef.current?.start()} />
+      <GameOverModal
+        hud={hud}
+        onRestart={() => engineRef.current?.start()}
+        onBackToMenu={(step) => {
+          setMenuStep(step);
+          engineRef.current?.toMenu();
+        }}
+      />
     </div>
   );
 }
