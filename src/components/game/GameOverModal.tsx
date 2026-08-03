@@ -1,4 +1,4 @@
-import { Share2, RotateCcw, Trophy, Home, ChevronLeft } from "lucide-react";
+import { Share2, RotateCcw, Trophy, Home, ChevronLeft, ChevronRight } from "lucide-react";
 import { ACHIEVEMENTS } from "@/game/GameEngine";
 import { MiniLeaderboard } from "@/components/game/MiniLeaderboard";
 import { CareerHint } from "@/components/game/CareerHint";
@@ -8,6 +8,7 @@ import type { HudState } from "@/game/types";
 interface Props {
   hud: HudState;
   onRestart: () => void;
+  onNextLevel?: () => void;
   onBackToMenu: (step: MenuStep) => void;
 }
 
