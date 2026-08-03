@@ -315,6 +315,15 @@ export class GameEngine {
     this.pushHud();
   }
 
+
+  /** Return to the main menu without touching any saved progress. */
+  toMenu() {
+    this.phase = "menu";
+    this.sound.stopMusic();
+    this.sound.setEngineIntensity(0);
+    this.pushHud();
+  }
+
   destroy() {
     cancelAnimationFrame(this.raf);
     this.sound.dispose();
