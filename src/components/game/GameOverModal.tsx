@@ -92,6 +92,17 @@ export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
             <Share2 className="size-4" /> Share
           </button>
         </div>
+        <div className="mt-3 flex gap-3">
+          <button
+            className="btn-ghost flex-1 !py-2 !text-xs"
+            onClick={() => onBackToMenu(isCareer ? "career" : "traffic")}
+          >
+            <ChevronLeft className="size-4" /> {isCareer ? "Back to career" : "Back to infinity"}
+          </button>
+          <button className="btn-ghost flex-1 !py-2 !text-xs" onClick={() => onBackToMenu("mode")}>
+            <Home className="size-4" /> Back to menu
+          </button>
+        </div>
       </div>
     </div>
   );
