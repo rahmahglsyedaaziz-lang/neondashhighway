@@ -60,6 +60,7 @@ export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<HudState>(INITIAL);
+  const [menuStep, setMenuStep] = useState<MenuStep>(null);
   const { user } = useSessionUser();
   const { data: cars } = useCars();
   const { data: profile } = useProfile(user?.id);
