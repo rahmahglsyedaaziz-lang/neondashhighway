@@ -1,15 +1,17 @@
-import { Share2, RotateCcw, Trophy } from "lucide-react";
+import { Share2, RotateCcw, Trophy, Home, ChevronLeft } from "lucide-react";
 import { ACHIEVEMENTS } from "@/game/GameEngine";
 import { MiniLeaderboard } from "@/components/game/MiniLeaderboard";
 import { CareerHint } from "@/components/game/CareerHint";
+import type { MenuStep } from "@/components/game/Overlays";
 import type { HudState } from "@/game/types";
 
 interface Props {
   hud: HudState;
   onRestart: () => void;
+  onBackToMenu: (step: MenuStep) => void;
 }
 
-export function GameOverModal({ hud, onRestart }: Props) {
+export function GameOverModal({ hud, onRestart, onBackToMenu }: Props) {
   if (hud.phase !== "gameover") return null;
   const isRecord = hud.score > 0 && hud.score >= hud.highScore;
 
