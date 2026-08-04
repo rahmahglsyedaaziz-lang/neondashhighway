@@ -53,8 +53,11 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        if (password.length < 8) {
+          throw new Error("Use at least 8 characters for your password.");
+        }
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin + next,
@@ -65,20 +68,34 @@ function AuthPage() {
         if (data.session) {
           navigate({ to: next, replace: true });
         } else {
-          setNotice("Account created. Check your inbox to confirm, then sign in.");
+          const signIn = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+          if (signIn.data.session) {
+            navigate({ to: next, replace: true });
+          } else {
+            setNotice("Account created. Check your inbox to confirm, then sign in.");
+          }
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
         if (error) throw error;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(
-        /pwned|weak/i.test(message)
-          ? "That password is too common. Pick a longer, more unique password."
-          : message,
+        /pwned|weak password|known to be weak/i.test(message)
+          ? "That password appears in known data breaches. Try a longer one mixing words, numbers and a symbol (e.g. NeonDrift-88x)."
+          : /already registered|already been registered/i.test(message)
+            ? "That email already has an account. Switch to Sign in instead."
+            : message,
       );
     } finally {
+
 
       setBusy(false);
     }
@@ -142,10 +159,16 @@ function AuthPage() {
               className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
+              minLength={mode === "signup" ? 8 : 6}
               required
             />
+            {mode === "signup" && (
+              <span className="text-xs text-muted-foreground">
+                At least 8 characters. Avoid common passwords — they are blocked for your safety.
+              </span>
+            )}
           </label>
+
 
           {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
           {notice && <p className="text-sm font-semibold text-primary">{notice}</p>}
