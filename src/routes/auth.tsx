@@ -159,10 +159,16 @@ function AuthPage() {
               className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
+              minLength={mode === "signup" ? 8 : 6}
               required
             />
+            {mode === "signup" && (
+              <span className="text-xs text-muted-foreground">
+                At least 8 characters. Avoid common passwords — they are blocked for your safety.
+              </span>
+            )}
           </label>
+
 
           {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
           {notice && <p className="text-sm font-semibold text-primary">{notice}</p>}
