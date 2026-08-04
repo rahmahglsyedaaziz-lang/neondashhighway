@@ -53,7 +53,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -62,14 +62,24 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        setNotice("Account created. If email confirmation is on, check your inbox to finish.");
+        if (data.session) {
+          navigate({ to: next, replace: true });
+        } else {
+          setNotice("Account created. Check your inbox to confirm, then sign in.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(
+        /pwned|weak/i.test(message)
+          ? "That password is too common. Pick a longer, more unique password."
+          : message,
+      );
     } finally {
+
       setBusy(false);
     }
   };
